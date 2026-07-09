@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="100%" height="100%">
+  <defs>
+    <!-- The Luminous Radial Glows -->
+    <radialGradient id="amberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cyanGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Architectural Grid Pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.03" />
+    </pattern>
+  </defs>
+
+  <!-- Void Background -->
+  <rect width="1200" height="900" fill="#050505" />
+  <rect width="1200" height="900" fill="url(#grid)" />
+
+  <!-- The Khatam Persian Border -->
+  <rect x="30" y="30" width="1140" height="840" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.3" />
+  <rect x="45" y="45" width="1110" height="810" fill="none" stroke="#fbbf24" stroke-width="1" opacity="0.1" />
+  <!-- Corner Diamonds -->
+  <path d="M 30 60 L 60 30 L 90 60 L 60 90 Z" fill="#050505" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+  <path d="M 1170 60 L 1140 30 L 1110 60 L 1140 90 Z" fill="#050505" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+  <path d="M 30 840 L 60 810 L 90 840 L 60 870 Z" fill="#050505" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+  <path d="M 1170 840 L 1140 810 L 1110 840 L 1140 870 Z" fill="#050505" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- ============================================== -->
+  <!-- THE 90-DEGREE CIRCUIT PATH                     -->
+  <!-- ============================================== -->
+  <path d="M 0 450 L 150 450
+           M 150 450 L 262.5 450 L 262.5 250 L 375 250
+           M 375 250 L 487.5 250 L 487.5 650 L 600 650
+           M 600 650 L 712.5 650 L 712.5 250 L 825 250
+           M 825 250 L 937.5 250 L 937.5 450 L 1050 450
+           M 1050 450 L 1200 450"
+        fill="none" stroke="#fbbf24" stroke-width="2.5" opacity="0.5" stroke-linejoin="miter" />
+
+  <!-- ============================================== -->
+  <!-- 1. PC SALES (Sapphire / Cyan)                  -->
+  <!-- ============================================== -->
+  <g transform="translate(150, 450)">
+    <circle cx="0" cy="0" r="130" fill="url(#cyanGlow)" />
+    <circle cx="0" cy="0" r="60" fill="#0a0a0a" stroke="#22d3ee" stroke-width="2"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- Laptop Icon -->
+    <path d="M -25 -15 L 25 -15 L 25 10 L -25 10 Z" fill="none" stroke="#22d3ee" stroke-width="2"/>
+    <path d="M -35 15 L 35 15 L 40 22 L -40 22 Z" fill="none" stroke="#22d3ee" stroke-width="2"/>
+    <path d="M -10 18 L 10 18" fill="none" stroke="#22d3ee" stroke-width="2"/>
+    <text x="0" y="95" fill="#cffafe" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="3" font-weight="bold">PC SALES</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 2. NETWORKING (Saffron / Amber)                -->
+  <!-- ============================================== -->
+  <g transform="translate(375, 250)">
+    <circle cx="0" cy="0" r="130" fill="url(#amberGlow)" />
+    <circle cx="0" cy="0" r="60" fill="#0a0a0a" stroke="#fbbf24" stroke-width="2"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- Radio Tower Icon -->
+    <path d="M -15 25 L 0 -25 L 15 25 Z" fill="none" stroke="#fbbf24" stroke-width="2"/>
+    <path d="M -10 5 L 10 5" fill="none" stroke="#fbbf24" stroke-width="2"/>
+    <path d="M -7 -10 L 7 -10" fill="none" stroke="#fbbf24" stroke-width="2"/>
+    <path d="M -25 -15 A 20 20 0 0 0 25 -15" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <path d="M -35 -25 A 30 30 0 0 0 35 -25" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="2 4"/>
+    <text x="0" y="95" fill="#fde68a" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="3" font-weight="bold">NETWORKING</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 3. GAME DEV & 3D (Ruby / Red)                  -->
+  <!-- ============================================== -->
+  <g transform="translate(600, 650)">
+    <circle cx="0" cy="0" r="130" fill="url(#redGlow)" />
+    <circle cx="0" cy="0" r="60" fill="#0a0a0a" stroke="#ef4444" stroke-width="2"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- 3D Isometric Cube -->
+    <path d="M 0 -25 L 22 -12 L 22 12 L 0 25 L -22 12 L -22 -12 Z" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <path d="M 0 -25 L 0 0 L 22 -12" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <path d="M 0 0 L -22 -12" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <path d="M 0 0 L 0 25" fill="none" stroke="#ef4444" stroke-width="2"/>
+    <text x="0" y="95" fill="#fecaca" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="3" font-weight="bold">GAME DEV &amp; 3D</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 4. WEBSITES (Sapphire / Cyan)                  -->
+  <!-- ============================================== -->
+  <g transform="translate(825, 250)">
+    <circle cx="0" cy="0" r="130" fill="url(#cyanGlow)" />
+    <circle cx="0" cy="0" r="60" fill="#0a0a0a" stroke="#22d3ee" stroke-width="2"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- Browser Wireframe -->
+    <path d="M -25 -20 L 25 -20 L 25 20 L -25 20 Z" fill="none" stroke="#22d3ee" stroke-width="2"/>
+    <path d="M -25 -5 L 25 -5" fill="none" stroke="#22d3ee" stroke-width="2"/>
+    <circle cx="-16" cy="-12" r="2" fill="#22d3ee" />
+    <circle cx="-8" cy="-12" r="2" fill="#22d3ee" />
+    <text x="0" y="95" fill="#cffafe" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="3" font-weight="bold">WEBSITES</text>
+  </g>
+
+  <!-- ============================================== -->
+  <!-- 5. ELECTRICAL (Saffron / Amber)                -->
+  <!-- ============================================== -->
+  <g transform="translate(1050, 450)">
+    <circle cx="0" cy="0" r="130" fill="url(#amberGlow)" />
+    <circle cx="0" cy="0" r="60" fill="#0a0a0a" stroke="#fbbf24" stroke-width="2"/>
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4 4"/>
+    <!-- Circuit Resistor -->
+    <path d="M -30 0 L -20 0 L -13 -15 L 0 15 L 13 -15 L 20 0 L 30 0" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linejoin="bevel"/>
+    <circle cx="-30" cy="0" r="3" fill="#fbbf24"/>
+    <circle cx="30" cy="0" r="3" fill="#fbbf24"/>
+    <text x="0" y="95" fill="#fde68a" font-family="monospace" font-size="14" text-anchor="middle" letter-spacing="3" font-weight="bold">ELECTRICAL</text>
+  </g>
+
+</svg>
