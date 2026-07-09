@@ -1,58 +1,54 @@
 // functions/api/chat.ts
 
-// THE FIX: We explicitly define the shape of the Cloudflare 'context' object!
-interface CloudflareContext {
-  request: Request;
-  env: {
-    GEMINI_API_KEY: string;
-  };
+// 1. IMPORT THE NEW UNIFIED SDK
+import { GoogleGenAI } from "@google/genai";
+
+// 2. DEFINE THE ENVIRONMENT
+export interface Env {
+  GEMINI_API_KEY: string;
 }
 
-export async function onRequestPost(context: CloudflareContext) {
-  const { request, env } = context;
-
+export async function onRequestPost(context: { env: Env; request: Request }) {
   try {
-    const body = await request.json() as { message?: string };
-    const userMessage = body.message;
+    // Extract the environment variable safely
+    const apiKey = context.env.GEMINI_API_KEY;
 
-    if (!userMessage) {
-      return new Response(JSON.stringify({ error: "No message provided." }), { status: 400 });
+    if (!apiKey) {
+      throw new Error("Merlin's beard! The API key is missing from context.env!");
     }
 
-    // Securely call Gemini using the key locked in Cloudflare's vault
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+    // 3. INITIALIZE THE NEW SDK
+    // Notice it now takes a configuration object, not just a raw string!
+    const ai = new GoogleGenAI({ apiKey: apiKey });
     
-    const payload = {
-      contents: [{ role: "user", parts: [{ text: userMessage }] }],
-      systemInstruction: {
-        role: "system",
-        parts: [{ text: "You are The Oracle, an AI assistant for ReddPixel Studio, a creative engineering portfolio by an IT professional who specializes in React, WebGL, MikroTik networking, and electrical installations. Keep answers concise, helpful, and slightly mysterious or architectural in tone." }]
-      }
-    };
+    // Parse the incoming request from your frontend (assuming you send JSON)
+    // const body = await context.request.json();
+    // const userMessage = body.message || "Hello, Gemini!";
 
-    const response = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    // 4. GENERATE CONTENT USING V2.0 SYNTAX
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash', 
+        contents: "You are a helpful 3D web assistant.", // Replace with userMessage in production
     });
 
-    const data = await response.json();
+    return new Response(JSON.stringify({ reply: response.text }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
 
-    if (!response.ok) {
-        return new Response(JSON.stringify({ error: data.error?.message || "Gemini API Error" }), { status: 500 });
+  } catch (error: unknown) {
+    // NARROW THE ERROR TYPE
+    let errorMessage = "An unknown dark magic occurred.";
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
     }
 
-    const botReply = data.candidates[0].content.parts[0].text;
-
-    return new Response(JSON.stringify({ reply: botReply }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: "The Oracle is unreachable." }), { 
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" }
     });
   }
 }
