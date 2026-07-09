@@ -15,6 +15,9 @@ const ContactPhaseUI: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const tl = useRef<gsap.core.Timeline | null>(null)
   
+  // The auto-scroll reference to keep the newest message in view
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  
   const [messages, setMessages] = useState<Message[]>([
     { sender: 'ai', text: "Greetings, traveler. I am the Architect's digital shadow. Speak your inquiry, and I shall fetch the answers from the databanks." }
   ])
@@ -69,17 +72,45 @@ const ContactPhaseUI: React.FC = () => {
     }
   }, [isExplore])
   
-  const handleSend = (e: React.FormEvent) => {
+  // Auto-scroll to the newest message whenever the messages array updates
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+  
+  // 3. THE ORACLE'S BRAIN: Connecting to the secure Cloudflare endpoint
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim()) return
+    if (!input.trim() || isTyping) return
+    
     const userMsg = input.trim()
+    
+    // Add user's message to the UI instantly
     setMessages(prev => [...prev, { sender: 'user', text: userMsg }])
     setInput('')
     setIsTyping(true)
-    setTimeout(() => {
-       setMessages(prev => [...prev, { sender: 'ai', text: "My neural link to n8n is not yet forged by the Architect. Please deploy the backend webhook to awaken me." }])
-       setIsTyping(false)
-    }, 1500)
+    
+    try {
+      // We securely call our Cloudflare Pages Function
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg })
+      })
+
+      const data = await response.json()
+
+      // Add the AI's response to the UI
+      if (response.ok && data.reply) {
+        setMessages(prev => [...prev, { sender: 'ai', text: data.reply }])
+      } else {
+        throw new Error(data.error || "Failed to fetch response from backend")
+      }
+    } catch (error) {
+      console.error("Oracle Error:", error)
+      setMessages(prev => [...prev, { sender: 'ai', text: "The neural link was disrupted by a stray cosmic ray. Please try your inquiry again." }])
+    } finally {
+      setIsTyping(false)
+    }
   }
 
   return (
@@ -139,6 +170,8 @@ const ContactPhaseUI: React.FC = () => {
                       </div>
                   </div>
                 )}
+                {/* Auto-scroll anchor */}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input Form */}
