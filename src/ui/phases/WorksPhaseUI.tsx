@@ -374,14 +374,14 @@ const WorksPhaseUI: React.FC = () => {
                   <div className={`door-left-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[0].subId, e)}>
-                     <img src={cat.projects[0].cover} alt="preview 1" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105" />
+                     <img src={cat.projects[0].cover} alt="preview 1" className="w-full h-full object-cover opacity-100 transition-all duration-700 group-hover:scale-105" />
                      <div className="absolute inset-0 bg-gradient-to-br from-black/70 to-transparent opacity-100 group-hover:opacity-40 transition-opacity duration-700" />
                   </div>
                   
                   <div className={`door-right-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(100% 100%, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[1].subId, e)}>
-                     <img src={cat.projects[1].cover} alt="preview 2" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105" />
+                     <img src={cat.projects[1].cover} alt="preview 2" className="w-full h-full object-cover opacity-100  transition-all duration-700 group-hover:scale-105" />
                      <div className="absolute inset-0 bg-gradient-to-tl from-black/70 to-transparent opacity-100 group-hover:opacity-40 transition-opacity duration-700" />
                   </div>
                   

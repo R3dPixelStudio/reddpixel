@@ -8,24 +8,24 @@ import GemAura from './GemAura'
 
 // ========================================================
 // THE SCENE COMPILER
-// This guarantees shaders are compiled and painted!
 // ========================================================
 const SceneCompiler: React.FC = () => {
   const { gl, scene, camera } = useThree()
   const setCubeReady = useExperience((state) => state.setCubeReady)
 
   useEffect(() => {
-    // 1. Force the GPU to synchronously compile all materials currently in the scene.
-    // This prevents the massive stutter that happens when procedural shaders render for the first time.
+    // 1. Force the GPU to synchronously compile materials
     gl.compile(scene, camera)
 
-    // 2. Wait for the browser to physically paint the compiled frame to the screen.
-    requestAnimationFrame(() => {
+    // 2. We give the GPU a tiny breather (500ms) to upload the heavy textures 
+    // to VRAM before we drop the loading screen curtain. No more black voids!
+    const timer = setTimeout(() => {
       requestAnimationFrame(() => {
-        // 3. ONLY NOW do we tell App.tsx to drop the loading screen.
         setCubeReady()
       })
-    })
+    }, 500)
+
+    return () => clearTimeout(timer)
   }, [gl, scene, camera, setCubeReady])
 
   return null
@@ -37,17 +37,9 @@ const Scene: React.FC = () => {
       <TimelineBridge />
       <ambientLight intensity={2.4} />
       <directionalLight position={[4, 6, 8]} intensity={4.5} />
-      
-      {/* Background Phase 0 Atmosphere */}
       <GemAura /> 
-      
-      {/* The Core Artifacts */}
       <GlassShell />
       <InnerWorldEnvironment />
-
-      {/* We place the Compiler at the very end of the Scene so it evaluates 
-        all the geometry and lights that were declared above it.
-      */}
       <SceneCompiler />
     </>
   )
@@ -59,14 +51,15 @@ const Experience: React.FC = () => {
   return (
     <div id="webgl-root" className="webgl-layer fixed inset-0 z-0">
       <Canvas
-        dpr={isLowEnd ? 1.5 : [1.5, 2]}
+        // DO NOT force 1.5 dpr on a potato phone. Let it breathe at 1.0!
+        dpr={isLowEnd ? 1 : [1, 1.5]}
         gl={{
-          antialias: !isLowEnd, // Saves massive bandwidth on mobile
+          antialias: !isLowEnd,
           alpha: true,
           powerPreference: 'high-performance',
         }}
         camera={{ fov: 45, near: 0.01, far: 500, position: [0, 0, 12] }}
-        shadows={!isLowEnd} // Off entirely on mobile!
+        shadows={!isLowEnd}
       >
         <Suspense fallback={null}>
           <Scene />
