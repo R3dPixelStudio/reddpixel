@@ -1,44 +1,63 @@
 // functions/api/chat.ts
 
-// 1. IMPORT THE NEW UNIFIED SDK
-import { GoogleGenAI } from "@google/genai";
-
-// 2. DEFINE THE ENVIRONMENT
 export interface Env {
-  GEMINI_API_KEY: string;
+  GROQ_API_KEY: string;
 }
 
 export async function onRequestPost(context: { env: Env; request: Request }) {
   try {
-    // Extract the environment variable safely
-    const apiKey = context.env.GEMINI_API_KEY;
+    const apiKey = context.env.GROQ_API_KEY;
 
     if (!apiKey) {
-      throw new Error("Merlin's beard! The API key is missing from context.env!");
+      throw new Error("The Groq API key is missing from the vault!");
     }
 
-    // 3. INITIALIZE THE NEW SDK
-    // Notice it now takes a configuration object, not just a raw string!
-    const ai = new GoogleGenAI({ apiKey: apiKey });
-    
-    // Parse the incoming request from your frontend (assuming you send JSON)
-    // const body = await context.request.json();
-    // const userMessage = body.message || "Hello, Gemini!";
+    // Parse the incoming request from your frontend
+    const body = await context.request.json() as { message?: string };
+    const userMessage = body.message;
 
-    // 4. GENERATE CONTENT USING V2.0 SYNTAX
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash', 
-        contents: "You are a helpful 3D web assistant.", // Replace with userMessage in production
+    if (!userMessage) {
+      return new Response(JSON.stringify({ error: "No message provided." }), { status: 400 });
+    }
+
+    // Call the Groq API directly using pure fetch
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama3-8b-8192", // Meta's incredibly fast, free Llama 3 model
+        messages: [
+          { 
+            role: "system", 
+            content: "You are The Oracle, an AI assistant for ReddPixel Studio, a creative engineering portfolio by an IT professional who specializes in React, WebGL, MikroTik networking, and electrical installations. Keep answers concise, helpful, and slightly mysterious or architectural in tone." 
+          },
+          { 
+            role: "user", 
+            content: userMessage 
+          }
+        ]
+      })
     });
 
-    return new Response(JSON.stringify({ reply: response.text }), {
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error?.message || "Groq API Error");
+    }
+
+    // Extract the AI's reply
+    const botReply = data.choices[0].message.content;
+
+    return new Response(JSON.stringify({ reply: botReply }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
 
   } catch (error: unknown) {
-    // NARROW THE ERROR TYPE
-    let errorMessage = "An unknown dark magic occurred.";
+    let errorMessage = "An unknown disruption occurred in the neural link.";
     
     if (error instanceof Error) {
       errorMessage = error.message;
