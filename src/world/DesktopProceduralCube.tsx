@@ -4,6 +4,7 @@ import { BoxGeometry, MeshPhysicalMaterial, DoubleSide, MeshDepthMaterial, RGBAD
 import { useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
+import { useCubeAdvance } from './useCubeAdvance'
 
 const CUBE_HALF = 1.0
 
@@ -13,6 +14,7 @@ interface Props {
 
 const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
   const currentPhase = useExperience((state) => state.currentPhase)
+  const { onPointerDown } = useCubeAdvance(goDeeper, currentPhase === 0)
 
   const { geometry, material, depthMaterial } = useMemo(() => {
     const geo = new BoxGeometry(CUBE_HALF * 2.0, CUBE_HALF * 2.0, CUBE_HALF * 2.0)
@@ -24,9 +26,9 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
     })
 
     mat.onBeforeCompile = (shader: any) => {
-      shader.vertexShader = `precision highp float; varying vec3 vLocalNormal; varying vec2 vMyUv;\n${shader.vertexShader}`.replace('#include <begin_vertex>', `#include <begin_vertex>\nvLocalNormal = normal; vMyUv = uv;`)
+      shader.vertexShader = ` varying vec3 vLocalNormal; varying vec2 vMyUv;\n${shader.vertexShader}`.replace('#include <begin_vertex>', `#include <begin_vertex>\nvLocalNormal = normal; vMyUv = uv;`)
       shader.fragmentShader = `
-         precision highp float;
+        //  precision highp float;
          varying vec3 vLocalNormal; varying vec2 vMyUv;
          
          // THE FIX: Safe multiplier for Intel, but chaotic enough for perfect random colors!
@@ -172,13 +174,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
         ref={shellRef}
         geometry={geometry} material={material} customDepthMaterial={depthMaterial} castShadow 
         visible={currentPhase < 3} 
-        onPointerUp={(e) => { 
-          e.stopPropagation(); 
-          if (currentPhase === 0) { 
-            document.body.style.cursor = 'auto'; 
-            goDeeper(); 
-          } 
-        }}
+        onPointerDown={onPointerDown}
         onPointerOver={() => { if (currentPhase === 0) document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { document.body.style.cursor = 'auto' }}
       />

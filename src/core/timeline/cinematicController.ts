@@ -159,19 +159,3 @@ export const exitExploreMode = (): void => {
 }
 
 export const destroyCinematicController = (): void => { gsap.killTweensOf(worldState) }
-
-// export const jumpToPhase = (targetPhase: number): void => {
-//   const state = useExperience.getState()
-//   if (state.isTransitioning || targetPhase === state.currentPhase) return
-
-//   state.setIsTransitioning(true)
-//   if (state.mode === MODES.EXPLORE) exitExploreMode();
-
-//   state.setPhase(targetPhase)
-//   animateCameraToPhase(targetPhase)
-  
-//   setTimeout(() => {
-//     state.setIsTransitioning(false)
-//     if (targetPhase >= 1) enterExploreMode(); 
-//   }, 1200)
-// }

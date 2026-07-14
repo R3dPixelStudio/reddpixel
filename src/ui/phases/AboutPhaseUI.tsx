@@ -24,7 +24,8 @@ const PersianNode = ({ className = "w-4 h-4" }: { className?: string }) => (
 )
 
 const AboutPhaseUI: React.FC = () => {
-  const { currentPhase, mode } = useExperience()
+  const currentPhase = useExperience((state) => state.currentPhase)
+  const mode = useExperience((state) => state.mode)
   const isExplore = mode === MODES.EXPLORE && currentPhase === 1
   const containerRef = useRef<HTMLDivElement>(null)
   const tl = useRef<gsap.core.Timeline | null>(null)
@@ -86,7 +87,7 @@ const AboutPhaseUI: React.FC = () => {
              <div className="absolute bottom-1/2 left-10 w-full flex flex-col justify-end ">
                 <div className="flex items-center gap-6 mb-2">
                    <div className="desk-top relative w-28 h-28 border border-red-500/50 p-1 rotate-45 shadow-[0_10px_20px_rgba(0,0,0,0.8)]">
-                       <img src="/images/profile.png" alt="Profile" className="w-full h-full object-cover -rotate-45 opacity-80 mix-blend-luminosity" />
+                       <img src="/images/profile.png" alt="Profile" loading="lazy" className="w-full h-full object-cover -rotate-45 opacity-80 mix-blend-luminosity" />
                    </div>
                    <div className="desk-top">
                        <h2 className="text-2xl font-light tracking-[0.2em] text-red-100">ENGINEER & DEVELOPER</h2>
@@ -151,7 +152,7 @@ const AboutPhaseUI: React.FC = () => {
                 
                 <div className="flex justify-start items-center gap-4 pl-1 mb-4">
                    <div className="mob-top relative w-16 h-16 border border-red-500/70 p-1 rotate-45">
-                       <img src="/images/profile.png" alt="Profile" className="w-full h-full object-cover -rotate-45 opacity-80 mix-blend-luminosity" />
+                       <img src="/images/profile.png" alt="Profile" loading="lazy" className="w-full h-full object-cover -rotate-45 opacity-80 mix-blend-luminosity" />
                    </div>
                    <div className="mob-top ml-2">
                        <h2 className="text-[12px] font-bold tracking-[0.2em] text-red-100 drop-shadow-lg">SYSTEMS ARCHITECT</h2>

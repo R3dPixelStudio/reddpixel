@@ -5,6 +5,4 @@ export const initExperience = (): void => {
   useExperience.getState().setPhase(0)
   useExperience.getState().setMode(MODES.LANDING)
   useExperience.getState().setIsTransitioning(false)
-  
-  console.log("SYS.ONLINE // Architecture Initialized")
 }

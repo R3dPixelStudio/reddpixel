@@ -9,7 +9,8 @@ interface Message {
 }
 
 const ContactPhaseUI: React.FC = () => {
-  const { currentPhase, mode } = useExperience()
+  const currentPhase = useExperience((state) => state.currentPhase)
+  const mode = useExperience((state) => state.mode)
   const isExplore = mode === MODES.EXPLORE && currentPhase === 3
   
   const containerRef = useRef<HTMLDivElement>(null)

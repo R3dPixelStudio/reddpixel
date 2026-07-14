@@ -5,12 +5,12 @@ import MobileBakedCube from './MobileBakedCube'
 import DesktopProceduralCube from './DesktopProceduralCube'
 
 const GlassShell: React.FC = () => {
-  const isLowEnd = useExperience((state) => state.isLowEnd)
+  const useMobileCube = useExperience((state) => state.isMobile || state.isLowEnd)
   const shellRef = useRef<Mesh>(null)
 
-  // Render the heavily optimized static cube for Mobile, 
-  // and the complex WebGL shader for Desktop.
-  if (isLowEnd) {
+  // Every phone uses the bounded transmission path. Low-end desktops also get
+  // it, while capable desktop GPUs retain the full procedural material.
+  if (useMobileCube) {
     return <MobileBakedCube />
   }
 

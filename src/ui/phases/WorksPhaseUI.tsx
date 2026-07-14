@@ -151,7 +151,9 @@ const PersianNode = ({ colorHex, isActive }: { colorHex: string, isActive: boole
 }
 
 const WorksPhaseUI: React.FC = () => {
-  const { currentPhase, mode, isMobile } = useExperience()
+  const currentPhase = useExperience((state) => state.currentPhase)
+  const mode = useExperience((state) => state.mode)
+  const isMobile = useExperience((state) => state.isMobile)
   const isExplore = mode === MODES.EXPLORE && currentPhase === 2
   
   const containerRef = useRef<HTMLDivElement>(null)
@@ -307,7 +309,7 @@ const WorksPhaseUI: React.FC = () => {
   return (
     <div ref={containerRef} className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center p-4 md:p-8 max-w-[1800px] mx-auto overflow-hidden">
       
-      <div className="lightbox-modal invisible opacity-0 absolute inset-0 z-[100] flex items-center justify-center bg-[#050000]/90 backdrop-blur-2xl pointer-events-none" 
+      <div className="lightbox-modal invisible opacity-0 absolute inset-0 z-[100] flex items-center justify-center bg-[#050000]/95 pointer-events-none" 
            onClick={() => setExpandedMedia(null)}>
         
         <div className="absolute top-6 right-6 md:top-10 md:right-10 cursor-pointer group p-4 z-50" 
@@ -326,20 +328,20 @@ const WorksPhaseUI: React.FC = () => {
                 className="max-w-[90%] max-h-[85%] object-contain shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/10" 
                 onClick={(e) => e.stopPropagation()} 
              />
-        ) : (
+        ) : expandedMedia ? (
              <img 
-                src={expandedMedia?.src || ''} 
+                src={expandedMedia.src} 
                 alt="Expanded Architecture" 
                 className="max-w-[90%] max-h-[85%] object-contain shadow-[0_0_80px_rgba(0,0,0,0.8)] border border-white/10" 
              />
-        )}
+        ) : null}
       </div>
 
       <div className={`w-full h-[90vh] md:h-[85vh] flex ${isMobile ? 'flex-col gap-2' : 'flex-row gap-4'} justify-center items-stretch`}>
          
          {SHOWCASES.map((cat) => (
             <div key={cat.id} 
-                 className={`category-wrapper cat-${cat.id} flex-1 flex flex-col relative overflow-hidden pointer-events-none border border-white/10 bg-[#080808]/90 backdrop-blur-lg`}>
+                 className={`category-wrapper cat-${cat.id} flex-1 flex flex-col relative overflow-hidden pointer-events-none border border-white/10 bg-[#080808]/95`}>
                
                {cat.bgPattern && (
                   <div className="absolute inset-0 z-0 opacity-[0.05] pointer-events-none mix-blend-screen"
@@ -374,14 +376,14 @@ const WorksPhaseUI: React.FC = () => {
                   <div className={`door-left-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[0].subId, e)}>
-                     <img src={cat.projects[0].cover} alt="preview 1" className="w-full h-full object-cover opacity-100 transition-all duration-700 group-hover:scale-105" />
+                     <img src={cat.projects[0].cover} alt="preview 1" loading="lazy" className="w-full h-full object-cover opacity-100 transition-all duration-700 group-hover:scale-105" />
                      <div className="absolute inset-0 bg-gradient-to-br from-black/70 to-transparent opacity-100 group-hover:opacity-40 transition-opacity duration-700" />
                   </div>
                   
                   <div className={`door-right-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(100% 100%, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[1].subId, e)}>
-                     <img src={cat.projects[1].cover} alt="preview 2" className="w-full h-full object-cover opacity-100  transition-all duration-700 group-hover:scale-105" />
+                     <img src={cat.projects[1].cover} alt="preview 2" loading="lazy" className="w-full h-full object-cover opacity-100  transition-all duration-700 group-hover:scale-105" />
                      <div className="absolute inset-0 bg-gradient-to-tl from-black/70 to-transparent opacity-100 group-hover:opacity-40 transition-opacity duration-700" />
                   </div>
                   
@@ -401,7 +403,7 @@ const WorksPhaseUI: React.FC = () => {
                             style={{ clipPath: idx === 0 ? 'polygon(0% 0%, 100% 0%, 0% 100%, 0% 100%)' : 'polygon(100% 0%, 100% 100%, 0% 100%, 100% 0%)' }}>
                            
                            <div className={`proj-cover-${proj.subId} absolute top-0 left-0 w-full h-full overflow-hidden`}>
-                               <img src={proj.cover} alt={proj.name} className="w-full h-full object-cover opacity-60 group-hover/proj:opacity-100 transition-all duration-700 group-hover/proj:scale-105" />
+                               <img src={proj.cover} alt={proj.name} loading="lazy" className="w-full h-full object-cover opacity-60 group-hover/proj:opacity-100 transition-all duration-700 group-hover/proj:scale-105" />
                                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 group-hover/proj:opacity-70 transition-opacity duration-700" />
                                
                                <div className={`proj-title-${proj.subId} absolute bottom-6 left-6 right-6 opacity-0 translate-y-5 pointer-events-none flex justify-between items-end z-10`}>
@@ -418,7 +420,7 @@ const WorksPhaseUI: React.FC = () => {
                                </div>
                            </div>
 
-                           <div className={`proj-details-${proj.subId} absolute bottom-0 left-0 w-full h-[55%] flex flex-col p-6 md:p-10 opacity-0 translate-y-5 cursor-auto border-t border-white/10 bg-black/80 backdrop-blur-md`} 
+                           <div className={`proj-details-${proj.subId} absolute bottom-0 left-0 w-full h-[55%] flex flex-col p-6 md:p-10 opacity-0 translate-y-5 cursor-auto border-t border-white/10 bg-black/90`} 
                                 onClick={(e) => e.stopPropagation()}>
                                
                                <p className="text-xs md:text-sm text-gray-200 font-light leading-relaxed mb-4 tracking-widest max-w-3xl flex-shrink-0">{proj.desc}</p>
@@ -432,7 +434,7 @@ const WorksPhaseUI: React.FC = () => {
                                          {media.type === 'video' ? (
                                              <video src={media.src} muted playsInline preload="metadata" className="w-full h-full object-cover opacity-70 group-hover/img:opacity-100 transition-opacity duration-300 pointer-events-none" />
                                          ) : (
-                                             <img src={media.src} alt="gallery" className="w-full h-full object-cover opacity-70 group-hover/img:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                             <img src={media.src} alt="gallery" loading="lazy" className="w-full h-full object-cover opacity-70 group-hover/img:opacity-100 transition-opacity duration-300 pointer-events-none" />
                                          )}
                                          
                                          {media.type === 'video' ? (
