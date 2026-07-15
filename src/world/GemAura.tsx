@@ -85,7 +85,7 @@ const GemAura: React.FC = () => {
       geometry={geometry} 
       material={material} 
       raycast={() => null} 
-      // THE MEMORY LEAK FIX: We hide the geometry instead of destroying it!
+      //We hide the geometry instead of destroying it!
       visible={currentPhase < 2} 
     />
   )

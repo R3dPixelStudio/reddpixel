@@ -8,7 +8,7 @@ import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 
 const CUBE_SIZE = 2
-const MOBILE_TRANSMISSION_SAMPLES = 2
+const MOBILE_TRANSMISSION_SAMPLES = 8
 const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v3-s${MOBILE_TRANSMISSION_SAMPLES}`
 
 // Drei exposes the ref as an R3F element type, while the runtime object is its
@@ -116,7 +116,7 @@ function injectMobileOrosi(shader: any) {
         min(currentUv.x, 1.0 - currentUv.x),
         min(currentUv.y, 1.0 - currentUv.y)
       );
-      float frameLead = 1.0 - smoothstep(0.0, 0.018, uvEdge);
+      float frameLead = 1.0 - smoothstep(0.0, 0.050, uvEdge);
       float lead = max(cellLead, frameLead);
 
       vec3 normalTilt = vec3(
@@ -231,8 +231,8 @@ const ActiveMobileBakedCube: React.FC<{ currentPhase: number }> = ({ currentPhas
         backsideResolution={1}
         transmissionSampler={false}
         transmission={0.94}
-        thickness={0.72}
-        roughness={0.035}
+        thickness={1.72}
+        roughness={0.015}
         ior={1.48}
         chromaticAberration={0}
         anisotropicBlur={0}

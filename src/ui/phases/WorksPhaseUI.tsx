@@ -203,6 +203,23 @@ const WorksPhaseUI: React.FC = () => {
     }
   }, [isExplore])
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && expandedMedia) {
+        setExpandedMedia(null)
+      }
+    }
+    
+    // Only attach listener if lightbox is open
+    if (expandedMedia) {
+      window.addEventListener('keydown', handleKeyDown)
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [expandedMedia])
+
   useGSAP(() => {
     if (!isExplore && !activeCat) return;
 
@@ -373,14 +390,14 @@ const WorksPhaseUI: React.FC = () => {
                </div>
 
                <div className="absolute inset-0 top-[70px] z-20 pointer-events-none overflow-hidden">
-                  <div className={`door-left-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
+                  <div className={`door-left-${cat.id} loading="lazy" absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(0 0, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[0].subId, e)}>
                      <img src={cat.projects[0].cover} alt="preview 1" loading="lazy" className="w-full h-full object-cover opacity-100 transition-all duration-700 group-hover:scale-105" />
                      <div className="absolute inset-0 bg-gradient-to-br from-black/70 to-transparent opacity-100 group-hover:opacity-40 transition-opacity duration-700" />
                   </div>
                   
-                  <div className={`door-right-${cat.id} absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
+                  <div className={`door-right-${cat.id} loading="lazy" absolute inset-0 z-0 bg-[#050505] pointer-events-auto cursor-pointer group`} 
                        style={{ clipPath: 'polygon(100% 100%, 100% 0, 0 100%)' }}
                        onClick={(e) => handleDoorClick(cat.id, cat.projects[1].subId, e)}>
                      <img src={cat.projects[1].cover} alt="preview 2" loading="lazy" className="w-full h-full object-cover opacity-100  transition-all duration-700 group-hover:scale-105" />

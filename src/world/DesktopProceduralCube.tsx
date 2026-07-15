@@ -178,6 +178,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
         onPointerOver={() => { if (currentPhase === 0) document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { document.body.style.cursor = 'auto' }}
       />
+      
   )
 }
 

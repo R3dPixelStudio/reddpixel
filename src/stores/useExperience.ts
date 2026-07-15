@@ -33,7 +33,7 @@ export const useExperience = create<ExperienceState>((set, get) => ({
   isLowEnd: false,
   isCubeReady: false,
   setCubeReady: () => set({ isCubeReady: true }),
-  setPhase: (phase) => set({ currentPhase: phase }),
+  setPhase: (phase) => set({ currentPhase: Math.max(0, Math.min(phase, 3)) }),
   setMode: (mode) => set({ mode }),
   setIsTransitioning: (status) => set({ isTransitioning: status }),
   setHardwareProfile: (isMobile, isLowEnd) => set({ isMobile, isLowEnd }),

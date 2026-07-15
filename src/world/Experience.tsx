@@ -41,11 +41,12 @@ const SceneCompiler: React.FC = () => {
 }
 
 const Scene: React.FC = () => {
+  const ismobile = useExperience((state) => state.isMobile )
   return (
     <>
       <TimelineBridge />
-      <ambientLight intensity={2.4} />
-      <directionalLight position={[4, 6, 8]} intensity={4.5} />
+      <ambientLight intensity={8.4} />
+      <directionalLight position={ismobile ? [4, 1, 8] : [4, 6, 8]} intensity={4.5} />
       <GemAura /> 
       <GlassShell />
       <InnerWorldEnvironment />
@@ -60,7 +61,6 @@ const Experience: React.FC = () => {
   return (
     <div id="webgl-root" className="webgl-layer fixed inset-0 z-0">
       <Canvas
-        // DO NOT force 1.5 dpr on a potato phone. Let it breathe at 1.0!
         dpr={isLowEnd ? 1 : [1, 1.5]}
         style={{ touchAction: 'none' }}
         gl={{
