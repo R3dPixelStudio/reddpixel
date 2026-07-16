@@ -16,7 +16,6 @@ const ContactPhaseUI: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const tl = useRef<gsap.core.Timeline | null>(null)
   
-  // The auto-scroll reference to keep the newest message in view
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
   const [messages, setMessages] = useState<Message[]>([
@@ -24,46 +23,57 @@ const ContactPhaseUI: React.FC = () => {
   ])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  
+  // THE NEW SPELL: Track the keyboard's height!
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
 
-  // 1. THE FORGE: Build timeline completely isolated from state!
+  // 1. THE SEER'S EYE: Watch the Visual Viewport to detect the Virtual Keyboard
+  useEffect(() => {
+    // Safety check for SSR, though Vite handles this well
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const viewport = window.visualViewport;
+
+    const handleResize = () => {
+      // The difference between the layout window and the visual window is the keyboard!
+      const offset = window.innerHeight - viewport.height;
+      // If the difference is larger than 50px, the keyboard is likely open.
+      setKeyboardOffset(offset > 50 ? offset : 0);
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    return () => viewport.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 2. THE FORGE: Build timeline completely isolated from state!
   useGSAP(() => {
     gsap.set(containerRef.current, { autoAlpha: 0 })
     
     tl.current = gsap.timeline({ paused: true })
       .to(containerRef.current, { autoAlpha: 1, duration: 0.1 })
-      
-      // Node Halves construct the center square
       .fromTo('.split-node', 
          { scale: 0 }, 
          { scale: 1, duration: 0.5, ease: 'back.out(2)' }
       )
-      
-      // Data Line fires through the middle
       .fromTo('.split-line', 
          { scaleX: 0, opacity: 0 }, 
          { scaleX: 1, opacity: 1, duration: 0.5, ease: 'expo.out' }, 
          "-=0.2"
       )
-      
-      // The Portal opens vertically! (Flexbox naturally pushes the nodes apart)
       .fromTo('.chat-portal', 
          { height: 0 }, 
          { height: '70vh', duration: 0.9, ease: 'power3.inOut' }, 
          "-=0.1"
       )
-      
-      // Line vanishes as the portal consumes the space
       .to('.split-line', { opacity: 0, scaleX: 0, duration: 0.4 }, "-=0.8")
-
-      // Inner data cascades in
       .fromTo('.chat-element', 
          { y: 20, opacity: 0 }, 
          { y: 0, opacity: 1, duration: 0.4, stagger: 0.1, ease: 'power2.out' }, 
          "-=0.3"
       )
-  }, { scope: containerRef }) // EMPTY DEPENDENCIES! 
+  }, { scope: containerRef })
 
-  // 2. THE CONDUCTOR: Pure playback logic!
+  // 3. THE CONDUCTOR: Pure playback logic!
   useEffect(() => {
     if (!tl.current) return;
     if (isExplore) {
@@ -73,25 +83,21 @@ const ContactPhaseUI: React.FC = () => {
     }
   }, [isExplore])
   
-  // Auto-scroll to the newest message whenever the messages array updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
   
-  // 3. THE ORACLE'S BRAIN: Connecting to the secure Cloudflare endpoint
+  // 4. THE ORACLE'S BRAIN
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isTyping) return
     
     const userMsg = input.trim()
-    
-    // Add user's message to the UI instantly
     setMessages(prev => [...prev, { sender: 'user', text: userMsg }])
     setInput('')
     setIsTyping(true)
     
     try {
-      // We securely call our Cloudflare Pages Function
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,7 +106,6 @@ const ContactPhaseUI: React.FC = () => {
 
       const data = await response.json()
 
-      // Add the AI's response to the UI
       if (response.ok && data.reply) {
         setMessages(prev => [...prev, { sender: 'ai', text: data.reply }])
       } else {
@@ -114,22 +119,31 @@ const ContactPhaseUI: React.FC = () => {
     }
   }
 
+  // A small helper to ensure we scroll the input into view when tapped!
+  const handleInputFocus = () => {
+    setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 300); // Wait for the keyboard animation to finish
+  }
+
   return (
-    <div ref={containerRef} className="fixed inset-0 z-40 flex items-center justify-center p-4 sm:p-10 pointer-events-none">
+    // THE FIX: We apply dynamic paddingBottom based on the keyboard's height!
+    // Added transition-all so it slides up smoothly like magic.
+    <div 
+      ref={containerRef} 
+      className="fixed inset-0 z-40 flex items-center justify-center p-4 sm:p-10 pointer-events-none transition-all duration-300 ease-out"
+      style={{ paddingBottom: keyboardOffset > 0 ? `${keyboardOffset}px` : '' }}
+    >
       
-      {/* Flex container maintains the structural integrity between the triangles and the portal */}
       <div className="relative flex flex-col items-center w-full max-w-3xl pointer-events-auto">
 
-        {/* TOP NODE HALF - A CSS Triangle */}
+        {/* TOP NODE HALF */}
         <div className="split-node z-20 w-0 h-0 border-l-[12px] border-r-[12px] border-b-[12px] border-transparent border-b-red-600 drop-shadow-[0_0_15px_#dc2626] origin-bottom scale-0" />
 
-        {/* THE HORIZONTAL SPLIT LINE */}
         <div className="split-line absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] md:w-[150%] h-[1px] bg-gradient-to-r from-transparent via-red-500 to-transparent z-0 origin-center" />
 
-        {/* THE CHAT PORTAL CONTAINER - This animates from height 0 to 70vh */}
         <div className="chat-portal flex items-center justify-center w-full overflow-hidden" style={{ height: 0 }}>
             
-            {/* THE INNER WINDOW - Has fixed height so it reveals symmetrically! */}
             <div className="chat-window flex flex-col w-full h-[70vh] flex-shrink-0 bg-[#050000]/90 backdrop-blur-md border-l border-r border-red-900/50 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
               
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-80" />
@@ -171,7 +185,6 @@ const ContactPhaseUI: React.FC = () => {
                       </div>
                   </div>
                 )}
-                {/* Auto-scroll anchor */}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -181,6 +194,7 @@ const ContactPhaseUI: React.FC = () => {
                   type="text" 
                   value={input}
                   onChange={e => setInput(e.target.value)}
+                  onFocus={handleInputFocus} // THE FIX: Keep it scrolled into view!
                   placeholder="Transmit inquiry..." 
                   className="flex-1 bg-[#050000] border border-red-900/50 rounded-full px-6 py-3 text-xs text-red-100 focus:outline-none focus:border-red-500 transition-colors placeholder:text-red-900"
                 />
@@ -191,7 +205,7 @@ const ContactPhaseUI: React.FC = () => {
             </div>
         </div>
 
-        {/* BOTTOM NODE HALF - A CSS Triangle */}
+        {/* BOTTOM NODE HALF */}
         <div className="split-node z-20 w-0 h-0 border-l-[12px] border-r-[12px] border-t-[12px] border-transparent border-t-red-600 drop-shadow-[0_0_15px_#dc2626] origin-top scale-0" />
 
       </div>
