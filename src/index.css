@@ -12,3 +12,305 @@ html, body, #root {
   overflow: hidden; /* Critical for 3D apps */
   color: white;
 }
+
+.hide-scrollbar,
+.about-mobile-scroll {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.about-mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.oracle-contact-shell {
+  padding-bottom: calc(0.75rem + var(--keyboard-offset, 0px) + env(safe-area-inset-bottom));
+}
+
+.chat-portal {
+  max-height: min(70dvh, calc(var(--oracle-viewport-height, 100dvh) - 1.5rem));
+}
+
+.oracle-chat-window {
+  height: 70vh;
+  height: min(70dvh, calc(var(--oracle-viewport-height, 100dvh) - 1.5rem));
+}
+
+.about-mobile-panel {
+  --about-mobile-left: clamp(8.5rem, 43vw, 11.5rem);
+  --about-mobile-line-top: clamp(5.5rem, 15dvh, 6.5rem);
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: clamp(0.75rem, 3.5vw, 1.25rem);
+  bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  left: clamp(0.75rem, 3.5vw, 1.25rem);
+}
+
+.about-mobile-grid {
+  display: grid;
+  grid-template-columns: var(--about-mobile-left) minmax(0, 1fr);
+}
+
+.about-mobile-node-anchor {
+  top: var(--about-mobile-line-top);
+  transform: translateY(-50%);
+}
+
+.about-mobile-main-line {
+  top: var(--about-mobile-line-top);
+  width: calc(var(--about-mobile-left) - 0.5rem);
+}
+
+.about-mobile-profile {
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+}
+
+.about-mobile-content {
+  grid-column: 2;
+  height: 100%;
+  padding: 0.25rem 0.125rem 1rem 0.75rem;
+  background: linear-gradient(270deg, rgba(5, 0, 0, 0.54), rgba(5, 0, 0, 0.16) 72%, transparent);
+}
+
+.about-mobile-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(127, 29, 29, 0.32);
+}
+
+.about-mobile-index {
+  position: absolute;
+  left: 0.75rem;
+  max-width: calc(var(--about-mobile-left) - 1rem);
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  color: rgba(254, 226, 226, 0.68);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.about-mobile-index-skills {
+  top: 18%;
+}
+
+.about-mobile-index-certificates {
+  top: 34%;
+}
+
+.about-mobile-index-experience {
+  top: 52%;
+}
+
+.about-mobile-certificates {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.about-mobile-certificate {
+  clip-path: polygon(
+    0 7px,
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px)
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(127, 29, 29, 0.62),
+    0 8px 22px rgba(0, 0, 0, 0.42);
+}
+
+.about-mobile-certificate::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.25rem;
+  height: 1px;
+  content: "";
+  background: rgb(220, 38, 38);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+}
+
+@media (hover: hover) {
+  .about-mobile-certificate:hover {
+    filter: brightness(1.14);
+  }
+}
+
+@media (max-width: 359px) {
+  .about-mobile-panel {
+    --about-mobile-left: 8.25rem;
+    right: 0.625rem;
+    left: 0.625rem;
+  }
+
+  .about-mobile-certificates {
+    gap: 0.3rem;
+  }
+
+  .about-mobile-certificate {
+    gap: 0.3rem;
+    padding-right: 0.35rem;
+    padding-left: 0.35rem;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 700px) {
+  .about-mobile-panel {
+    --about-mobile-line-top: 4.75rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
+  .about-mobile-profile {
+    width: 2.875rem;
+    height: 2.875rem;
+  }
+
+  .about-mobile-statement {
+    margin-top: 0.35rem;
+    font-size: clamp(0.95rem, 4.3vw, 1.15rem);
+  }
+
+  .about-mobile-content {
+    padding-top: 0;
+    padding-bottom: 0.5rem;
+  }
+
+  .about-mobile-section {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .about-mobile-content section:first-of-type span {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .about-mobile-index-skills {
+    top: 19%;
+  }
+
+  .about-mobile-index-certificates {
+    top: 36%;
+  }
+
+  .about-mobile-index-experience {
+    top: 55%;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 560px) {
+  .about-mobile-panel {
+    --about-mobile-line-top: 4.25rem;
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .about-mobile-profile {
+    top: 0.25rem;
+    left: 0.75rem;
+    width: 2.625rem;
+    height: 2.625rem;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  .about-mobile-certificates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-mobile-experience-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+}
+
+.traversal-controls {
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  .oracle-contact-shell {
+    padding-bottom: calc(2.5rem + var(--keyboard-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  .chat-portal {
+    max-height: min(70dvh, calc(var(--oracle-viewport-height, 100dvh) - 5rem));
+  }
+
+  .oracle-chat-window {
+    height: min(70dvh, calc(var(--oracle-viewport-height, 100dvh) - 5rem));
+  }
+
+  .traversal-controls {
+    bottom: calc(2.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 768px) and (max-height: 700px) {
+  .about-desktop-top {
+    width: 122%;
+    transform: scale(0.82);
+    transform-origin: left bottom;
+  }
+}
+
+.oracle-message-enter-user {
+  animation: oracle-message-user-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.oracle-message-enter-ai {
+  animation: oracle-message-ai-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.oracle-typing-dot {
+  animation: oracle-typing-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes oracle-message-user-in {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes oracle-message-ai-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-18px, 8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes oracle-typing-pulse {
+  0%,
+  70%,
+  100% {
+    opacity: 0.28;
+    transform: translateY(0) rotate(45deg) scale(0.75);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-4px) rotate(45deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-message-enter-user,
+  .oracle-message-enter-ai,
+  .oracle-typing-dot {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+  }
+}

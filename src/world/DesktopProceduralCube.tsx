@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { BoxGeometry, MeshPhysicalMaterial, DoubleSide, MeshDepthMaterial, RGBADepthPacking } from 'three'
+import { BoxGeometry, MeshPhysicalMaterial, DoubleSide, MeshDepthMaterial, RGBADepthPacking, type Mesh } from 'three'
 import { useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
@@ -9,7 +9,7 @@ import { useCubeAdvance } from './useCubeAdvance'
 const CUBE_HALF = 1.0
 
 interface Props {
-  shellRef: React.RefObject<any>;
+  shellRef: React.RefObject<Mesh | null>
 }
 
 const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
@@ -25,7 +25,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
       side: DoubleSide, transparent: true, depthWrite: true       
     })
 
-    mat.onBeforeCompile = (shader: any) => {
+    mat.onBeforeCompile = (shader) => {
       shader.vertexShader = ` varying vec3 vLocalNormal; varying vec2 vMyUv;\n${shader.vertexShader}`.replace('#include <begin_vertex>', `#include <begin_vertex>\nvLocalNormal = normal; vMyUv = uv;`)
       shader.fragmentShader = `
         //  precision highp float;
@@ -90,7 +90,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
             float uvEdge = min(min(currentUv.x, 1.0 - currentUv.x), min(currentUv.y, 1.0 - currentUv.y));
             float customLead = max(smoothstep(0.03, 0.0, edgeDist), smoothstep(0.01, 0.00, uvEdge));
             
-            return Vitrail(gColor * 1.2, customLead, calculatedTilt);
+            return Vitrail(gColor * 1.28, customLead, calculatedTilt);
          }
          ${shader.fragmentShader}
       `.replace('void main() {', `void main() { Vitrail orosi = getOrosi(vLocalNormal, vMyUv);`)
@@ -100,13 +100,13 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
         .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb = mix(orosi.color, vec3(0.05), orosi.lead);`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n roughnessFactor = mix(0.0, 0.9, orosi.lead);`)
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n metalnessFactor = mix(0.1, 1.0, orosi.lead);`)
-        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n if (!gl_FrontFacing) { vec3 coreLight = vec3(0.8, 0.7, 0.6); totalEmissiveRadiance += coreLight * orosi.color * (1.0 - orosi.lead); }`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n if (!gl_FrontFacing) { vec3 coreLight = vec3(0.55, 0.48, 0.42); totalEmissiveRadiance += coreLight * orosi.color * (1.0 - orosi.lead); }`)
     }
     
-    mat.customProgramCacheKey = () => 'vitrail_procedural_v3_main'
+    mat.customProgramCacheKey = () => 'vitrail_procedural_v4_main'
 
     const depthMat = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide })
-    depthMat.onBeforeCompile = (shader: any) => {
+    depthMat.onBeforeCompile = (shader) => {
       shader.vertexShader = `varying vec3 vLocalNormal; varying vec2 vMyUv;\n${shader.vertexShader}`.replace('#include <begin_vertex>', `#include <begin_vertex>\nvLocalNormal = normal;\nvMyUv = uv;`)
       shader.fragmentShader = `varying vec3 vLocalNormal; varying vec2 vMyUv;\n
       // THE FIX: Matching Intel-safe hash for the shadows
@@ -156,6 +156,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
       geometry.dispose();
       material.dispose();
       depthMaterial.dispose();
+      document.body.style.cursor = 'auto'
     }
   }, [geometry, material, depthMaterial])
 

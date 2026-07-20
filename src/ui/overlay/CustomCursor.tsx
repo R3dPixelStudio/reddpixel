@@ -5,12 +5,15 @@ import { useExperience } from '../../stores/useExperience'
 const CustomCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null)
   const isMobile = useExperience((state) => state.isMobile)
+  const isLowEnd = useExperience((state) => state.isLowEnd)
+  const isCursorDisabled = isMobile || isLowEnd
 
   useEffect(() => {
-    if (isMobile || !cursorRef.current) return;
+    if (isCursorDisabled || !cursorRef.current) return
+    const cursor = cursorRef.current
 
-    const xTo = gsap.quickTo(cursorRef.current, "x", { duration: 0.15, ease: "power3" })
-    const yTo = gsap.quickTo(cursorRef.current, "y", { duration: 0.15, ease: "power3" })
+    const xTo = gsap.quickTo(cursor, "x", { duration: 0.15, ease: "power3" })
+    const yTo = gsap.quickTo(cursor, "y", { duration: 0.15, ease: "power3" })
 
     const moveCursor = (e: MouseEvent) => {
       xTo(e.clientX)
@@ -18,10 +21,13 @@ const CustomCursor: React.FC = () => {
     }
 
     window.addEventListener('mousemove', moveCursor)
-    return () => window.removeEventListener('mousemove', moveCursor)
-  }, [isMobile])
+    return () => {
+      window.removeEventListener('mousemove', moveCursor)
+      gsap.killTweensOf(cursor)
+    }
+  }, [isCursorDisabled])
 
-  if (isMobile) return null; // Zero DOM rendering on mobile
+  if (isCursorDisabled) return null
 
   return (
     <div 

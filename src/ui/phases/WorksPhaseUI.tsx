@@ -35,18 +35,16 @@ const SHOWCASES: ShowcaseCategory[] = [
     title: "DIGITAL REALMS",
     subtitle: "Frontend & Web Architecture",
     colorHex: "#dc2626",
-    bgPattern: "/images/persian-bg.jpg", 
+    bgPattern: "",
     projects: [
       {
         subId: 'alphatradezone',
         name: "AlphaTradeZone",
         desc: "A frontend SPA built with React and Tailwind. Engineered for scalable component architecture, exploring state management and zero-latency data visualization interfaces.",
-        cover: "/images/project1.jpg", 
+        cover: "/images/project1.jpg",
         gallery: [
           { type: 'image', src: "/images/project1.jpg" },
-          { type: 'image', src: "/images/atz/2.jpg" },
-          { type: 'image', src: "/images/atz/3.jpg" },
-          { type: 'image', src: "/images/atz/4.jpg" }
+          { type: 'image', src: "/images/vfx/atz-vfx.jpg" }
         ],
         hasLink: true,
         link: "https://rshiya.github.io/atz-land/" 
@@ -89,10 +87,10 @@ const SHOWCASES: ShowcaseCategory[] = [
         subId: 'logomotion',
         name: "Freelance VFX",
         desc: "Digital content creation encompassing logomotion, architectural renders, and particle systems baked down for real-time web deployment and video presentation.",
-        cover: "/images/vfx/vfx-2.jpg", 
+        cover: "/images/vfx/vfx-2.jpg",
         gallery: [
-          { type: 'image', src: "/images/project1.jpg" },
-          { type: 'video', src: "/videos/sample.mp4" } 
+          { type: 'image', src: "/images/vfx/Artboard2.jpg" },
+          { type: 'image', src: "/images/vfx/atz-vfx.jpg" }
         ],
         hasLink: false
       }
@@ -109,10 +107,10 @@ const SHOWCASES: ShowcaseCategory[] = [
         subId: 'networking',
         name: "Network & RF Towers",
         desc: "Deployment of passive network infrastructure and structured cabling. Hands-on configuration of MikroTik RouterOS equipment (routers, switches, dishes), including physical hardware troubleshooting directly on radio towers.",
-        cover: "/images/highVoltage and altitude/hva-1.jpg", 
+        cover: "/images/highVoltage and altitude/webp/hva-1.webp",
         gallery: [
-          { type: 'image', src: "/images/project3.jpg" },
-          { type: 'image', src: "/images/project1.jpg" }
+          { type: 'image', src: "/images/highVoltage and altitude/webp/3.webp" },
+          { type: 'image', src: "/images/highVoltage and altitude/webp/4.webp" }
         ],
         hasLink: false
       },
@@ -120,10 +118,10 @@ const SHOWCASES: ShowcaseCategory[] = [
         subId: 'electrical',
         name: "Electrical Systems",
         desc: "Executed complex commercial and residential electrical installations. Focused on physical wire routing, circuit load management, and high-voltage system setup across luxury villas and commercial buildings.",
-        cover: "/images/highVoltage and altitude/hva-2.jpg", 
+        cover: "/images/highVoltage and altitude/webp/hva-2.webp",
         gallery: [
-          { type: 'image', src: "/images/project2.jpg" },
-          { type: 'image', src: "/images/project3.jpg" }
+          { type: 'image', src: "/images/highVoltage and altitude/webp/el1.webp" },
+          { type: 'image', src: "/images/highVoltage and altitude/webp/7.webp" }
         ],
         hasLink: false
       }
@@ -133,12 +131,26 @@ const SHOWCASES: ShowcaseCategory[] = [
 
 const PersianNode = ({ colorHex, isActive }: { colorHex: string, isActive: boolean }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<gsap.core.Tween | null>(null)
 
   useGSAP(() => {
+    animationRef.current?.kill()
+
     if (isActive) {
-      gsap.to(nodeRef.current, { rotation: 360, duration: 6, repeat: -1, ease: "linear", overwrite: "auto" })
+      animationRef.current = gsap.to(nodeRef.current, {
+        rotation: '+=360',
+        duration: 6,
+        repeat: -1,
+        ease: 'none',
+        overwrite: 'auto',
+      })
     } else {
-      gsap.to(nodeRef.current, { rotation: 0, duration: 1, ease: "power3.out", overwrite: "auto" })
+      animationRef.current = gsap.to(nodeRef.current, {
+        rotation: 0,
+        duration: 1,
+        ease: 'power3.out',
+        overwrite: 'auto',
+      })
     }
   }, { dependencies: [isActive] })
 
@@ -158,6 +170,9 @@ const WorksPhaseUI: React.FC = () => {
   
   const containerRef = useRef<HTMLDivElement>(null)
   const masterTl = useRef<gsap.core.Timeline | null>(null)
+  const categoryTl = useRef<gsap.core.Timeline | null>(null)
+  const projectTl = useRef<gsap.core.Timeline | null>(null)
+  const lightboxTween = useRef<gsap.core.Tween | null>(null)
   
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const [activeProj, setActiveProj] = useState<string | null>(null)
@@ -165,16 +180,19 @@ const WorksPhaseUI: React.FC = () => {
   const pendingProjTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (activeCat !== null || expandedMedia !== null) {
-      document.body.classList.add('hide-global-nav');
-    } else {
-      document.body.classList.remove('hide-global-nav');
+    document.body.classList.toggle('hide-global-nav', activeCat !== null || expandedMedia !== null)
+
+    return () => {
+      document.body.classList.remove('hide-global-nav')
     }
   }, [activeCat, expandedMedia]);
 
   useEffect(() => {
     return () => {
       if (pendingProjTimer.current) clearTimeout(pendingProjTimer.current);
+      categoryTl.current?.kill()
+      projectTl.current?.kill()
+      lightboxTween.current?.kill()
     }
   }, []);
 
@@ -192,14 +210,31 @@ const WorksPhaseUI: React.FC = () => {
 
   useEffect(() => {
     if (!masterTl.current) return;
+
+    const timeline = masterTl.current
+
     if (isExplore) {
-       masterTl.current.timeScale(1).play()
+       timeline.eventCallback('onReverseComplete', null)
+       timeline.timeScale(1).play()
     } else {
-       masterTl.current.timeScale(2).reverse().then(() => {
+       if (pendingProjTimer.current) {
+          clearTimeout(pendingProjTimer.current)
+          pendingProjTimer.current = null
+       }
+
+       timeline.eventCallback('onReverseComplete', () => {
+          const state = useExperience.getState()
+          if (state.currentPhase === 2 && state.mode === MODES.EXPLORE) return
+
           setActiveCat(null)
           setActiveProj(null)
           setExpandedMedia(null)
        })
+       timeline.timeScale(2).reverse()
+    }
+
+    return () => {
+      timeline.eventCallback('onReverseComplete', null)
     }
   }, [isExplore])
 
@@ -221,9 +256,11 @@ const WorksPhaseUI: React.FC = () => {
   }, [expandedMedia])
 
   useGSAP(() => {
+    categoryTl.current?.kill()
     if (!isExplore && !activeCat) return;
 
-    const t = gsap.timeline({ defaults: { ease: 'expo.inOut', overwrite: 'auto' } }) 
+    const t = gsap.timeline({ defaults: { ease: 'expo.inOut', overwrite: 'auto' } })
+    categoryTl.current = t
     
     SHOWCASES.forEach(cat => {
       if (activeCat === cat.id) {
@@ -243,7 +280,9 @@ const WorksPhaseUI: React.FC = () => {
   }, { scope: containerRef, dependencies: [activeCat, isMobile, isExplore] })
 
   useGSAP(() => {
-    const t = gsap.timeline({ defaults: { ease: 'expo.inOut', overwrite: 'auto' } }) 
+    projectTl.current?.kill()
+    const t = gsap.timeline({ defaults: { ease: 'expo.inOut', overwrite: 'auto' } })
+    projectTl.current = t
     
     SHOWCASES.forEach(cat => {
       const isThisCatActive = activeCat === cat.id;
@@ -268,7 +307,6 @@ const WorksPhaseUI: React.FC = () => {
               t.to(`.proj-cover-${proj.subId}`, { height: '45%', duration: 0.8 }, 0)
               t.to(`.proj-title-${proj.subId}`, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.3)
               t.to(`.proj-details-${proj.subId}`, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.4)
-              t.to(`.diagonal-line-${cat.id}`, { autoAlpha: 0, duration: 0.4 }, 0)
            } else if (isThisCatActive && activeProj !== null) {
               t.to(`.proj-wrapper-${proj.subId}`, { clipPath: hiddenClip, duration: 0.8, zIndex: 10 }, 0)
            } else {
@@ -276,35 +314,45 @@ const WorksPhaseUI: React.FC = () => {
               t.to(`.proj-cover-${proj.subId}`, { height: '100%', duration: 0.8 }, 0)
               t.to(`.proj-title-${proj.subId}`, { autoAlpha: 0, y: 20, duration: 0.3 }, 0)
               t.to(`.proj-details-${proj.subId}`, { autoAlpha: 0, y: 20, duration: 0.3 }, 0)
-              t.to(`.diagonal-line-${cat.id}`, { autoAlpha: 1, duration: 0.6 }, 0.4)
            }
       })
     })
   }, { scope: containerRef, dependencies: [activeProj, activeCat, isMobile] })
 
   useGSAP(() => {
+    lightboxTween.current?.kill()
+
     if (expandedMedia) {
-        gsap.to('.lightbox-modal', { autoAlpha: 1, pointerEvents: 'auto', scale: 1, duration: 0.4, ease: 'expo.out', overwrite: 'auto' })
+        lightboxTween.current = gsap.to('.lightbox-modal', { autoAlpha: 1, pointerEvents: 'auto', scale: 1, duration: 0.4, ease: 'expo.out', overwrite: 'auto' })
     } else {
-        gsap.to('.lightbox-modal', { autoAlpha: 0, pointerEvents: 'none', scale: 0.98, duration: 0.3, ease: 'power2.in', overwrite: 'auto' })
+        lightboxTween.current = gsap.to('.lightbox-modal', { autoAlpha: 0, pointerEvents: 'none', scale: 0.98, duration: 0.3, ease: 'power2.in', overwrite: 'auto' })
     }
   }, { scope: containerRef, dependencies: [expandedMedia] })
-
   const handleDoorClick = (catId: string, projId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isExplore) return;
+
     if (activeCat !== catId) {
         setActiveCat(catId);
-        setActiveProj(null); 
-        if (pendingProjTimer.current) clearTimeout(pendingProjTimer.current);
+        setActiveProj(null);
+        if (pendingProjTimer.current) {
+            clearTimeout(pendingProjTimer.current);
+            pendingProjTimer.current = null;
+        }
         
         pendingProjTimer.current = setTimeout(() => {
             setActiveProj(projId);
+            pendingProjTimer.current = null;
         }, 800);
     }
   }
 
   const handleCatHeaderClick = (catId: string) => {
-    if (pendingProjTimer.current) clearTimeout(pendingProjTimer.current);
+    if (!isExplore) return;
+    if (pendingProjTimer.current) {
+       clearTimeout(pendingProjTimer.current);
+       pendingProjTimer.current = null;
+    }
     if (activeCat !== catId) {
        setActiveCat(catId)
        setActiveProj(null)
@@ -312,19 +360,32 @@ const WorksPhaseUI: React.FC = () => {
   }
 
   const handleProjClick = (subId: string) => {
-    if (pendingProjTimer.current) clearTimeout(pendingProjTimer.current);
+    if (!isExplore) return;
+    if (pendingProjTimer.current) {
+       clearTimeout(pendingProjTimer.current);
+       pendingProjTimer.current = null;
+    }
     setActiveProj(activeProj === subId ? null : subId)
   }
 
   const handleShrinkCategory = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (pendingProjTimer.current) clearTimeout(pendingProjTimer.current);
+    if (!isExplore) return;
+    if (pendingProjTimer.current) {
+       clearTimeout(pendingProjTimer.current);
+       pendingProjTimer.current = null;
+    }
     setActiveCat(null);
     setActiveProj(null);
   }
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center p-4 md:p-8 max-w-[1800px] mx-auto overflow-hidden">
+    <div
+      ref={containerRef}
+      aria-hidden={!isExplore}
+      inert={!isExplore}
+      className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center p-4 md:p-8 max-w-[1800px] mx-auto overflow-hidden"
+    >
       
       <div className="lightbox-modal invisible opacity-0 absolute inset-0 z-[100] flex items-center justify-center bg-[#050000]/95 pointer-events-none" 
            onClick={() => setExpandedMedia(null)}>

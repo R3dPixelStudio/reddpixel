@@ -2,36 +2,197 @@ import gsap from 'gsap'
 import { useExperience, MODES } from '../../stores/useExperience'
 import { worldState } from '../../world/worldState'
 
-export const FIRST_INTERIOR_PHASE = 1;
-export const MAX_PHASE = 3;
+export const FIRST_INTERIOR_PHASE = 1
+export const MAX_PHASE = 3
 
-// FIX: Track timeouts to kill zombie callbacks!
-let transitionTimeout: ReturnType<typeof setTimeout> | null = null;
+const TRANSITION_DURATION = 1.2
+const CAMERA_TWEEN_PROPERTIES = 'cameraX,cameraY,cameraZ,targetX,targetY,targetZ'
+const EXPLORE_TWEEN_PROPERTIES = 'targetX,targetY,cubeRotX,cubeRotY,cubeRotZ'
 
-const clearTransitionTimeout = () => {
-  if (transitionTimeout) {
-    clearTimeout(transitionTimeout);
-    transitionTimeout = null;
-  }
-};
+let cameraTween: gsap.core.Tween | null = null
+let exploreTween: gsap.core.Tween | null = null
+let blackoutTween: gsap.core.Tween | null = null
+let blackoutElement: HTMLDivElement | null = null
 
 const getCameraPositions = (isMobile: boolean) => [
-  { z: isMobile ? 18.0 : 14.0, y: isMobile ? 1.5 : 1.5, targetX: 0, targetY: 0, targetZ: 0 }, 
-  { z: isMobile ? 9.0 : 4.5,   y: isMobile ? 1.5 : 0.5, targetX: 0, targetY: 0, targetZ: 0 }, 
-  { z: -4.0, y: 0.0, targetX: 0, targetY: 0, targetZ: -20.0 }, 
-  { z: -8.0, y: 0.0, targetX: 0, targetY: 0, targetZ: -20.0 }  
+  { z: isMobile ? 14 : 14, y: 1.5, targetX: 0, targetY: 0, targetZ: 0 },
+  { z: isMobile ? 8 : 4.5, y: isMobile ? 1.5 : 0.5, targetX: 0, targetY: 0, targetZ: 0 },
+  { z: -4, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
+  { z: -8, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
 ]
 
-const animateCameraToPhase = (phaseIndex: number) => {
+// ============================================================================
+// THE ORACLE'S TARGET: Control the spinning cube's position in Phase 1
+// ============================================================================
+const getAboutExploreTarget = (isMobile: boolean) => ({
+  // EDIT MOBILE X HERE: 0 is center. Positive moves cube left, negative moves right.
+  x: isMobile ? 1.5 : 1.5, 
+  // EDIT MOBILE Y HERE: 0 is center. Positive moves cube down, negative moves up.
+  y: isMobile ? 0.0 : 0.0  
+})
+
+const killCameraTween = () => {
+  cameraTween?.kill()
+  cameraTween = null
+  gsap.killTweensOf(worldState, CAMERA_TWEEN_PROPERTIES)
+}
+
+const killExploreTween = () => {
+  exploreTween?.kill()
+  exploreTween = null
+  gsap.killTweensOf(worldState, EXPLORE_TWEEN_PROPERTIES)
+}
+
+const finishTransition = (phase: number) => {
+  const state = useExperience.getState()
+  if (state.currentPhase !== phase) return
+
+  state.setIsTransitioning(false)
+  if (phase >= FIRST_INTERIOR_PHASE) enterExploreMode()
+}
+
+const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
   const state = useExperience.getState()
   const positions = getCameraPositions(state.isMobile)
-  const target = positions[phaseIndex] || positions[0]
+  const target = positions[phaseIndex] ?? positions[0]
+
+  killCameraTween()
+
+  const tween = gsap.to(worldState, {
+    cameraX: 0,
+    cameraY: target.y,
+    cameraZ: target.z,
+    targetX: target.targetX,
+    targetY: target.targetY,
+    targetZ: target.targetZ,
+    duration: TRANSITION_DURATION,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      if (cameraTween === tween) cameraTween = null
+      onComplete?.()
+    },
+  })
+
+  cameraTween = tween
+}
+
+export const syncCameraToLayout = (): void => {
+  const state = useExperience.getState()
+  if (state.currentPhase > 1) return
+
+  const target = getCameraPositions(state.isMobile)[state.currentPhase]
+  const isAboutExplore = state.currentPhase === 1 && state.mode === MODES.EXPLORE
   
-  gsap.killTweensOf(worldState) // FIX: Kill EVERYTHING on worldState to prevent races!
-  gsap.to(worldState, {
-    cameraZ: target.z, cameraY: target.y, 
-    targetX: target.targetX, targetY: target.targetY, targetZ: target.targetZ, 
-    duration: 1.2, ease: 'power3.inOut'
+  // Fetch our new combined X and Y targets
+  const aboutExploreTarget = getAboutExploreTarget(state.isMobile)
+
+  if (!state.isCubeReady || blackoutElement) {
+    killCameraTween()
+    Object.assign(worldState, {
+      cameraX: 0,
+      cameraY: target.y,
+      cameraZ: target.z,
+      targetX: isAboutExplore ? aboutExploreTarget.x : target.targetX,
+      targetY: isAboutExplore ? aboutExploreTarget.y : target.targetY, // Updated to use dynamic Y
+      targetZ: target.targetZ,
+    })
+    return
+  }
+
+  if (state.isTransitioning) {
+    animateCameraToPhase(state.currentPhase, () => finishTransition(state.currentPhase))
+    return
+  }
+
+  killCameraTween()
+
+  const tween = gsap.to(worldState, {
+    cameraX: 0,
+    cameraY: target.y,
+    cameraZ: target.z,
+    targetX: isAboutExplore ? aboutExploreTarget.x : target.targetX,
+    targetY: isAboutExplore ? aboutExploreTarget.y : target.targetY, // Updated to use dynamic Y
+    targetZ: target.targetZ,
+    duration: 0.65,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      if (cameraTween === tween) cameraTween = null
+    },
+  })
+
+  cameraTween = tween
+}
+
+const removeBlackout = () => {
+  blackoutTween?.kill()
+  blackoutTween = null
+  gsap.killTweensOf(blackoutElement)
+  blackoutElement?.remove()
+  blackoutElement = null
+}
+
+const resetToLanding = () => {
+  const state = useExperience.getState()
+  const landing = getCameraPositions(state.isMobile)[0]
+
+  killCameraTween()
+  killExploreTween()
+
+  state.setPhase(0)
+  state.setMode(MODES.LANDING)
+
+  Object.assign(worldState, {
+    cameraX: 0,
+    cameraY: landing.y,
+    cameraZ: landing.z,
+    targetX: landing.targetX,
+    targetY: landing.targetY,
+    targetZ: landing.targetZ,
+    cubeRotX: 0,
+    cubeRotY: 0,
+    cubeRotZ: 0,
+  })
+}
+
+const cycleToLanding = () => {
+  const state = useExperience.getState()
+  state.setIsTransitioning(true)
+
+  if (!blackoutElement) {
+    blackoutElement = document.createElement('div')
+    blackoutElement.id = 'blackout-screen'
+    Object.assign(blackoutElement.style, {
+      position: 'fixed',
+      inset: '0',
+      backgroundColor: '#020000',
+      zIndex: '99999',
+      opacity: '0',
+      pointerEvents: 'all',
+    })
+    document.body.appendChild(blackoutElement)
+  }
+
+  const blackout = blackoutElement
+  gsap.killTweensOf(blackout)
+
+  blackoutTween = gsap.to(blackout, {
+    opacity: 1,
+    duration: 1,
+    ease: 'power2.inOut',
+    onComplete: () => {
+      resetToLanding()
+
+      blackoutTween = gsap.to(blackout, {
+        opacity: 0,
+        duration: 1.2,
+        delay: 0.3,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          removeBlackout()
+          useExperience.getState().setIsTransitioning(false)
+        },
+      })
+    },
   })
 }
 
@@ -39,145 +200,99 @@ export const goDeeper = (): void => {
   const state = useExperience.getState()
   if (state.isTransitioning) return
 
-  clearTransitionTimeout(); // Clear zombies!
-
   if (state.currentPhase >= MAX_PHASE) {
-    state.setIsTransitioning(true)
-    
-    // FIX: Safely check for existing blackout so we don't spawn a hundred of them
-    let blackout = document.getElementById('blackout-screen')
-    if (!blackout) {
-      blackout = document.createElement('div')
-      blackout.id = 'blackout-screen'
-      Object.assign(blackout.style, {
-        position: 'fixed', inset: '0', backgroundColor: '#020000', zIndex: '99999', opacity: '0', pointerEvents: 'all'
-      })
-      document.body.appendChild(blackout)
-    }
-
-    gsap.killTweensOf(blackout);
-    gsap.to(blackout, {
-      opacity: 1, duration: 1.0, ease: 'power2.inOut',
-      onComplete: () => {
-        if (state.mode === MODES.EXPLORE) exitExploreMode();
-        state.setPhase(0)
-        state.setMode(MODES.LANDING) // FIX: Reset state!
-        
-        const positions = getCameraPositions(state.isMobile)
-        const target = positions[0]
-        
-        gsap.killTweensOf(worldState)
-        worldState.cameraZ = target.z
-        worldState.cameraY = target.y
-        worldState.targetX = target.targetX
-        worldState.targetY = target.targetY
-        worldState.targetZ = target.targetZ
-        worldState.cubeRotX = 0
-        worldState.cubeRotY = 0
-        worldState.cubeRotZ = 0
-
-        gsap.to(blackout, {
-          opacity: 0, duration: 1.2, delay: 0.3, ease: 'power2.inOut',
-          onComplete: () => {
-            blackout?.remove()
-            state.setIsTransitioning(false)
-          }
-        })
-      }
-    })
+    cycleToLanding()
     return
   }
 
   state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode();
+  if (state.mode === MODES.EXPLORE) exitExploreMode()
 
   const nextPhase = state.currentPhase + 1
   state.setPhase(nextPhase)
-  animateCameraToPhase(nextPhase)
-  
-  transitionTimeout = setTimeout(() => {
-    state.setIsTransitioning(false)
-    if (nextPhase >= 1) enterExploreMode(); 
-  }, 1200)
+  animateCameraToPhase(nextPhase, () => finishTransition(nextPhase))
 }
 
 export const goBack = (): void => {
   const state = useExperience.getState()
   if (state.isTransitioning || state.currentPhase <= 0) return
 
-  clearTransitionTimeout();
   state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode();
+  if (state.mode === MODES.EXPLORE) exitExploreMode()
 
-  const prevPhase = state.currentPhase - 1
-  state.setPhase(prevPhase)
-  
-  if (prevPhase === 0) state.setMode(MODES.LANDING); // FIX: Reset state!
+  const previousPhase = state.currentPhase - 1
+  state.setPhase(previousPhase)
+  if (previousPhase === 0) state.setMode(MODES.LANDING)
 
-  animateCameraToPhase(prevPhase)
-  
-  transitionTimeout = setTimeout(() => {
-    state.setIsTransitioning(false)
-    if (prevPhase >= 1) enterExploreMode(); 
-  }, 1200)
+  animateCameraToPhase(previousPhase, () => finishTransition(previousPhase))
 }
 
 export const jumpToPhase = (targetPhase: number): void => {
   const state = useExperience.getState()
-  // FIX: Protect against invalid phase jumps
-  if (targetPhase < 0 || targetPhase > MAX_PHASE || state.isTransitioning || targetPhase === state.currentPhase) return
+  const targetIsInvalid = targetPhase < 0 || targetPhase > MAX_PHASE
 
-  clearTransitionTimeout();
+  if (targetIsInvalid || state.isTransitioning || targetPhase === state.currentPhase) return
+
   state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode();
+  if (state.mode === MODES.EXPLORE) exitExploreMode()
 
   state.setPhase(targetPhase)
-  if (targetPhase === 0) state.setMode(MODES.LANDING); // FIX: Reset state!
+  if (targetPhase === 0) state.setMode(MODES.LANDING)
 
-  animateCameraToPhase(targetPhase)
-  
-  transitionTimeout = setTimeout(() => {
-    state.setIsTransitioning(false)
-    if (targetPhase >= 1) enterExploreMode(); 
-  }, 1200)
+  animateCameraToPhase(targetPhase, () => finishTransition(targetPhase))
 }
 
 export const enterExploreMode = (): void => {
   const state = useExperience.getState()
   state.setMode(MODES.EXPLORE)
-  
-  if (state.currentPhase === 1) {
-    const randomSpinX = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI);
-    const randomSpinY = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI);
 
-    const targetX = state.isMobile ? 0 : 1.5;
-    const targetY = state.isMobile ? 1.5 : 0; 
+  if (state.currentPhase !== 1) return
 
-    gsap.killTweensOf(worldState); // Safety first
-    gsap.to(worldState, { 
-        targetX: targetX, targetY: targetY, 
-        cubeRotX: randomSpinX, cubeRotY: randomSpinY, cubeRotZ: (Math.random() - 0.5) * Math.PI * 0.5,
-        duration: 1.5, ease: 'power3.inOut' 
-    })
-  }
+  const randomSpinX = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI)
+  const randomSpinY = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI)
+
+  // Fetch our new combined X and Y targets
+  const exploreTarget = getAboutExploreTarget(state.isMobile)
+
+  killExploreTween()
+  exploreTween = gsap.to(worldState, {
+    targetX: exploreTarget.x,
+    targetY: exploreTarget.y, // No longer hardcoded to 0!
+    cubeRotX: randomSpinX,
+    cubeRotY: randomSpinY,
+    cubeRotZ: (Math.random() - 0.5) * Math.PI * 0.5,
+    duration: 1.5,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      exploreTween = null
+    },
+  })
 }
 
 export const exitExploreMode = (): void => {
   const state = useExperience.getState()
   state.setMode(MODES.TRAVERSAL)
-  
-  const positions = getCameraPositions(state.isMobile)
-  const baseTarget = positions[state.currentPhase] || positions[0]
 
-  gsap.killTweensOf(worldState); // Safety first
-  gsap.to(worldState, { 
-      targetX: baseTarget.targetX, targetY: baseTarget.targetY, 
-      cubeRotX: 0, cubeRotY: 0, cubeRotZ: 0,
-      duration: 1.0, ease: 'power3.inOut' 
+  const positions = getCameraPositions(state.isMobile)
+  const baseTarget = positions[state.currentPhase] ?? positions[0]
+
+  killExploreTween()
+  exploreTween = gsap.to(worldState, {
+    targetX: baseTarget.targetX,
+    targetY: baseTarget.targetY,
+    cubeRotX: 0,
+    cubeRotY: 0,
+    cubeRotZ: 0,
+    duration: 1,
+    ease: 'power3.inOut',
+    onComplete: () => {
+      exploreTween = null
+    },
   })
 }
 
-export const destroyCinematicController = (): void => { 
-  gsap.killTweensOf(worldState) 
-  clearTransitionTimeout();
+export const destroyCinematicController = (): void => {
+  killCameraTween()
+  killExploreTween()
+  removeBlackout()
 }

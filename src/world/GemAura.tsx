@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { AdditiveBlending, PlaneGeometry, ShaderMaterial, Mesh } from 'three'
+import { AdditiveBlending, PlaneGeometry, ShaderMaterial, Mesh, Vector3 } from 'three'
 import gsap from 'gsap'
 import { useExperience } from '../stores/useExperience'
 
@@ -44,14 +44,20 @@ const GemAura: React.FC = () => {
   const meshRef = useRef<Mesh>(null)
   const currentPhase = useExperience((state) => state.currentPhase)
   const phaseDriver = useRef({ value: 1 })
+  const cameraDirection = useRef(new Vector3())
 
   useEffect(() => {
-    gsap.killTweensOf(phaseDriver.current)
-    gsap.to(phaseDriver.current, {
+    const driver = phaseDriver.current
+    gsap.killTweensOf(driver)
+    const tween = gsap.to(driver, {
       value: currentPhase === 0 ? 1 : 0,
       duration: 1.5,
       ease: 'power3.inOut'
     })
+
+    return () => {
+      tween.kill()
+    }
   }, [currentPhase])
 
   const { geometry, material } = useMemo(() => {
@@ -67,16 +73,25 @@ const GemAura: React.FC = () => {
     return { geometry: geo, material: mat }
   }, [])
 
+  useEffect(() => {
+    const driver = phaseDriver.current
+
+    return () => {
+      gsap.killTweensOf(driver)
+      geometry.dispose()
+      material.dispose()
+    }
+  }, [geometry, material])
+
   useFrame((state) => {
-    if (!meshRef.current) return
+    if (!meshRef.current || currentPhase >= 2) return
     const mat = meshRef.current.material as ShaderMaterial
     mat.uniforms.uTime.value = state.clock.elapsedTime
     mat.uniforms.uLanding.value = phaseDriver.current.value
 
     meshRef.current.quaternion.copy(state.camera.quaternion)
-    const cameraPos = state.camera.position.clone()
-    const dir = cameraPos.normalize().multiplyScalar(-4) 
-    meshRef.current.position.copy(dir)
+    cameraDirection.current.copy(state.camera.position).normalize().multiplyScalar(-4)
+    meshRef.current.position.copy(cameraDirection.current)
   })
 
   return (

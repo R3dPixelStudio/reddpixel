@@ -17,28 +17,46 @@ const InnerWorldEnvironment: React.FC = () => {
   const uTravelTarget = useRef(0)
   const uPanTarget = useRef(0)
   const prevPhaseRef = useRef(currentPhase)
-  
-  const uniforms = useRef({
+  const fadeTimerRef = useRef<number | null>(null)
+
+  const uniforms = useMemo(() => ({
       uTime: { value: 0 },
       uOpacity: { value: 0 },
-      uTravelOffset: { value: 0 }, 
+      uTravelOffset: { value: 0 },
       uPointer: { value: new Vector2(0, 0) },
       uExplorePan: { value: 0 }
-  })
+  }), [])
 
   useEffect(() => {
+    if (fadeTimerRef.current !== null) {
+      clearTimeout(fadeTimerRef.current)
+      fadeTimerRef.current = null
+    }
+
     if (currentPhase >= 2) {
-       // Delay fade-in if coming from the outside
-       if (prevPhaseRef.current < 2) setTimeout(() => { uOpacityTarget.current = 1.0 }, 1200)
-       else uOpacityTarget.current = 1.0
-       
+       if (prevPhaseRef.current < 2) {
+         fadeTimerRef.current = window.setTimeout(() => {
+           uOpacityTarget.current = 1
+           fadeTimerRef.current = null
+         }, 1200)
+       } else {
+         uOpacityTarget.current = 1
+       }
+
        uTravelTarget.current = (currentPhase - 2) * (Math.PI / 2.0)
     } else {
-       uOpacityTarget.current = 0.0
+       uOpacityTarget.current = 0
     }
-    
-    uPanTarget.current = (mode === MODES.EXPLORE && currentPhase >= 2) ? 0.3 : 0.0
+
+    uPanTarget.current = mode === MODES.EXPLORE && currentPhase >= 2 ? 0.3 : 0
     prevPhaseRef.current = currentPhase
+
+    return () => {
+      if (fadeTimerRef.current !== null) {
+        clearTimeout(fadeTimerRef.current)
+        fadeTimerRef.current = null
+      }
+    }
   }, [currentPhase, mode])
       
 
@@ -47,7 +65,7 @@ const InnerWorldEnvironment: React.FC = () => {
     const geo = new SphereGeometry(30, isLowEnd ? 32 : 64, isLowEnd ? 32 : 64)
     
     const mat = new ShaderMaterial({
-      uniforms: uniforms.current,
+      uniforms,
       vertexShader: `
         varying vec3 vWorldPos;
         void main() {
@@ -145,27 +163,40 @@ const InnerWorldEnvironment: React.FC = () => {
       side: BackSide     
     })
     return { geometry: geo, material: mat }
-  }, [isLowEnd]) 
+  }, [isLowEnd, uniforms])
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      material.dispose()
+    }
+  }, [geometry, material])
 
   useFrame((state, delta) => {
-    if (!envRef.current) return 
-    
-    uniforms.current.uOpacity.value = MathUtils.damp(uniforms.current.uOpacity.value, uOpacityTarget.current, 3, delta)
-    uniforms.current.uTravelOffset.value = MathUtils.damp(uniforms.current.uTravelOffset.value, uTravelTarget.current, 2, delta)
-    uniforms.current.uExplorePan.value = MathUtils.damp(uniforms.current.uExplorePan.value, uPanTarget.current, 3, delta)
+    if (!envRef.current) return
+    const activeMaterial = envRef.current.material as ShaderMaterial
+    const activeUniforms = activeMaterial.uniforms
 
-    uniforms.current.uTime.value = state.clock.elapsedTime
-    uniforms.current.uPointer.value.x = MathUtils.lerp(uniforms.current.uPointer.value.x, state.pointer.x, 0.05)
-    uniforms.current.uPointer.value.y = MathUtils.lerp(uniforms.current.uPointer.value.y, state.pointer.y, 0.05)
+    const isDormant = activeUniforms.uOpacity.value <= 0.001 && uOpacityTarget.current === 0
+    if (isDormant) {
+      activeUniforms.uTravelOffset.value = uTravelTarget.current
+      activeUniforms.uExplorePan.value = uPanTarget.current
+      envRef.current.visible = false
+      return
+    }
 
-    // THE CULLING SPELL:
-    // If the opacity is practically zero, cut the mesh out of the render loop entirely!
-    // Phase 0 and 1 will now sit at beautifully low triangle counts.
-    envRef.current.visible = uniforms.current.uOpacity.value > 0.005;
+    activeUniforms.uOpacity.value = MathUtils.damp(activeUniforms.uOpacity.value, uOpacityTarget.current, 3, delta)
+    activeUniforms.uTravelOffset.value = MathUtils.damp(activeUniforms.uTravelOffset.value, uTravelTarget.current, 2, delta)
+    activeUniforms.uExplorePan.value = MathUtils.damp(activeUniforms.uExplorePan.value, uPanTarget.current, 3, delta)
+
+    activeUniforms.uTime.value = state.clock.elapsedTime
+    activeUniforms.uPointer.value.x = MathUtils.lerp(activeUniforms.uPointer.value.x, state.pointer.x, 0.05)
+    activeUniforms.uPointer.value.y = MathUtils.lerp(activeUniforms.uPointer.value.y, state.pointer.y, 0.05)
+
+    envRef.current.visible = activeUniforms.uOpacity.value > 0.005
   })
 
   return (
-    // THE FIX: Removed the declarative 'visible' prop so our useFrame can control it mathematically!
     <mesh ref={envRef} geometry={geometry} material={material} raycast={() => null} />
   )
 }

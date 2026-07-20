@@ -5,11 +5,12 @@ import MobileBakedCube from './MobileBakedCube'
 import DesktopProceduralCube from './DesktopProceduralCube'
 
 const GlassShell: React.FC = () => {
-  const useMobileCube = useExperience((state) => state.isMobile || state.isLowEnd)
+  const useMobileCube = useExperience((state) => state.isLowEnd)
   const shellRef = useRef<Mesh>(null)
 
-  // Every phone uses the bounded transmission path. Low-end desktops also get
-  // it, while capable desktop GPUs retain the full procedural material.
+  // Renderer quality follows measured GPU capability, never the CSS breakpoint.
+  // Capable phones can therefore use the exact procedural desktop cube while
+  // the Canvas still keeps its mobile DPR and feature limits.
   if (useMobileCube) {
     return <MobileBakedCube />
   }

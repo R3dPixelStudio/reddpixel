@@ -1,6 +1,7 @@
-import React, { useEffect, useState, Suspense } from 'react'
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useDetectGPU, useProgress } from '@react-three/drei'
 import { useExperience } from './stores/useExperience'
+import { syncCameraToLayout } from './core/timeline/cinematicController'
 import Experience from './world/Experience'
 import Layout from './ui/Layout'
 
@@ -11,34 +12,23 @@ const LoadingScreen: React.FC<{ isGpuReady: boolean }> = ({ isGpuReady }) => {
   const { progress, total } = useProgress()
   const isCubeReady = useExperience((state) => state.isCubeReady)
 
-  const [isFullyLoaded, setIsFullyLoaded] = useState(false)
+  const [didReachFailsafe, setDidReachFailsafe] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
+  const isDownloadingDone = total === 0 || Math.round(progress) >= 100
+  const isFullyLoaded = didReachFailsafe || (isGpuReady && isDownloadingDone && isCubeReady)
 
-  // 1. The Failsafe (10s absolute max, but we clean it up!)
   useEffect(() => {
-    const failsafe = setTimeout(() => {
-      setIsFullyLoaded(true)
-      setTimeout(() => setIsHidden(true), 1000)
-    }, 10000) 
-    
+    const failsafe = window.setTimeout(() => setDidReachFailsafe(true), 10000)
     return () => clearTimeout(failsafe)
   }, [])
 
-  // 2. The Ironclad Loading Logic
   useEffect(() => {
-    if (!isGpuReady) return;
+    if (!isFullyLoaded) return
+    const hideTimer = window.setTimeout(() => setIsHidden(true), 1000)
+    return () => clearTimeout(hideTimer)
+  }, [isFullyLoaded])
 
-    // FIX: If total is 0, Drei isn't loading anything globally. We must not wait for progress === 100!
-    const isDownloadingDone = total === 0 ? true : Math.round(progress) >= 100;
-
-    if (isDownloadingDone && isCubeReady) {
-        setIsFullyLoaded(true)
-        const hideTimer = setTimeout(() => setIsHidden(true), 1000)
-        return () => clearTimeout(hideTimer)
-    }
-  }, [isGpuReady, progress, total, isCubeReady])
-
-  if (isHidden) return null;
+  if (isHidden) return null
 
   return (
     <div 
@@ -58,37 +48,68 @@ const LoadingScreen: React.FC<{ isGpuReady: boolean }> = ({ isGpuReady }) => {
   )
 }
 
-// ========================================================
-// THE GPU DETECTOR (Needs Suspense)
-// ========================================================
 const GPUDetector: React.FC<{ onReady: (isMobile: boolean, isWeak: boolean) => void }> = ({ onReady }) => {
-  const GPUTier = useDetectGPU() 
+  const gpuTier = useDetectGPU()
   
   useEffect(() => {
-    if (GPUTier) {
-      const isMobile = GPUTier.isMobile === true || window.innerWidth < 768;
-      const isWeak = isMobile || (typeof GPUTier.tier === 'number' && GPUTier.tier <= 1);
-      onReady(isMobile, isWeak)
-    }
-  }, [GPUTier, onReady])
+    if (!gpuTier) return
 
-  return null;
+    const isGpuMobile = gpuTier.isMobile === true
+    const isWeak = typeof gpuTier.tier === 'number' && gpuTier.tier <= 1
+    onReady(isGpuMobile, isWeak)
+  }, [gpuTier, onReady])
+
+  return null
 }
 
-// ========================================================
-// THE ROOT APPLICATION
-// ========================================================
 const App: React.FC = () => {
   const setHardwareProfile = useExperience((state) => state.setHardwareProfile)
+  const setMobileLayout = useExperience((state) => state.setMobileLayout)
   const [isGpuReady, setIsGpuReady] = useState<boolean>(false)
+  const profileResolvedRef = useRef(false)
+
+  const handleGpuReady = useCallback(
+    (_isGpuMobile: boolean, isWeak: boolean) => {
+      if (profileResolvedRef.current) return
+      profileResolvedRef.current = true
+      setHardwareProfile(isWeak)
+      setIsGpuReady(true)
+    },
+    [setHardwareProfile],
+  )
+
+  useEffect(() => {
+    const mobileLayout = window.matchMedia('(max-width: 767px)')
+    const syncMobileLayout = () => {
+      const nextIsMobile = mobileLayout.matches
+      if (useExperience.getState().isMobile === nextIsMobile) return
+
+      setMobileLayout(nextIsMobile)
+      if (isGpuReady) syncCameraToLayout()
+    }
+
+    syncMobileLayout()
+    mobileLayout.addEventListener('change', syncMobileLayout)
+    return () => mobileLayout.removeEventListener('change', syncMobileLayout)
+  }, [isGpuReady, setMobileLayout])
+
+  useEffect(() => {
+    if (isGpuReady) return
+
+    const fallback = window.setTimeout(() => {
+      if (profileResolvedRef.current) return
+      profileResolvedRef.current = true
+      setHardwareProfile(true)
+      setIsGpuReady(true)
+    }, 10000)
+
+    return () => clearTimeout(fallback)
+  }, [isGpuReady, setHardwareProfile])
 
   return (
     <>
       <Suspense fallback={null}>
-        <GPUDetector onReady={(isMobile, isWeak) => {
-           setHardwareProfile(isMobile, isWeak);
-           setIsGpuReady(true);
-        }} />
+        <GPUDetector onReady={handleGpuReady} />
       </Suspense>
 
       <LoadingScreen isGpuReady={isGpuReady} />

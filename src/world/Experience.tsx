@@ -4,7 +4,7 @@ import { useExperience } from '../stores/useExperience'
 import TimelineBridge from '../core/timeline/TimelineBridge'
 import GlassShell from './GlassShell'
 import InnerWorldEnvironment from './InnerWorldEnvironment'
-import GemAura from './GemAura' 
+import GemAura from './GemAura'
 
 // ========================================================
 // THE SCENE COMPILER
@@ -41,35 +41,41 @@ const SceneCompiler: React.FC = () => {
 }
 
 const Scene: React.FC = () => {
-  const ismobile = useExperience((state) => state.isMobile )
+  const isMobile = useExperience((state) => state.isMobile)
+  const isLowEnd = useExperience((state) => state.isLowEnd)
+  const isCubeReady = useExperience((state) => state.isCubeReady)
+  const useMobileLighting = isMobile || isLowEnd
+
   return (
     <>
       <TimelineBridge />
       <ambientLight intensity={8.4} />
-      <directionalLight position={ismobile ? [4, 1, 8] : [4, 6, 8]} intensity={4.5} />
-      <GemAura /> 
+      <directionalLight position={useMobileLighting ? [4, 6, 8] : [4, 6, 8]} intensity={5.5} />
+      <GemAura />
       <GlassShell />
       <InnerWorldEnvironment />
-      <SceneCompiler />
+      {!isCubeReady && <SceneCompiler />}
     </>
   )
 }
 
 const Experience: React.FC = () => {
+  const isMobile = useExperience((state) => state.isMobile)
   const isLowEnd = useExperience((state) => state.isLowEnd)
+  const useConservativeCanvas = isMobile || isLowEnd
 
   return (
     <div id="webgl-root" className="webgl-layer fixed inset-0 z-0">
       <Canvas
-        dpr={isLowEnd ? 1 : [1, 1.5]}
+        dpr={useConservativeCanvas ? 1 : [1, 1.5]}
         style={{ touchAction: 'none' }}
         gl={{
-          antialias: !isLowEnd,
+          antialias: !useConservativeCanvas,
           alpha: true,
           powerPreference: 'high-performance',
         }}
         camera={{ fov: 45, near: 0.01, far: 500, position: [0, 0, 12] }}
-        shadows={!isLowEnd}
+        shadows={!useConservativeCanvas}
       >
         <Suspense fallback={null}>
           <Scene />

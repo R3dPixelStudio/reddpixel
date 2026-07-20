@@ -1,29 +1,32 @@
-import React, { useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MeshTransmissionMaterial, useCursor } from '@react-three/drei'
-import { DoubleSide, type Mesh, type MeshPhysicalMaterial } from 'three'
-import { useExperience } from '../stores/useExperience'
+import {
+  DataTexture,
+  FrontSide,
+  RGBAFormat,
+  UnsignedByteType,
+  MathUtils, 
+  type Mesh,
+  type MeshPhysicalMaterial,
+} from 'three'
+import { MODES, useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 
 const CUBE_SIZE = 2
-const MOBILE_TRANSMISSION_SAMPLES = 8
-const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v3-s${MOBILE_TRANSMISSION_SAMPLES}`
+const MOBILE_TRANSMISSION_SAMPLES = 4
+const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v4-custom-fbo-s${MOBILE_TRANSMISSION_SAMPLES}`
 
-// Drei exposes the ref as an R3F element type, while the runtime object is its
-// MeshPhysicalMaterial subclass. Keep that mismatch isolated at this boundary.
 type DreiTransmissionRef = React.ElementRef<typeof MeshTransmissionMaterial>
 
-/**
- * Injects the desktop Orosi language into Drei's transmission shader.
- *
- * Desktop uses two 3x3 Voronoi searches. Mobile preserves the face seeds,
- * eight-way fold, organic cell centres, palette and border, but finds the two
- * nearest cells in one 3x3 pass. This halves the pattern's hash work while
- * keeping irregular stained-glass pieces instead of square grid cells.
- */
-function injectMobileOrosi(shader: any) {
+interface CompilableShader {
+  vertexShader: string
+  fragmentShader: string
+}
+
+function injectMobileOrosi(shader: CompilableShader) {
   shader.vertexShader = `
     varying vec3 vOrosiLocalNormal;
     varying vec2 vOrosiUv;
@@ -111,20 +114,20 @@ function injectMobileOrosi(shader: any) {
                              vec3(0.0, 0.2, 0.8);
 
       float distanceGap = max(secondDist - closestDist, 0.0);
-      float cellLead = 1.0 - smoothstep(0.0, 0.055, distanceGap);
+      float cellLead = 1.0 - smoothstep(0.0, 0.042, distanceGap);
       float uvEdge = min(
         min(currentUv.x, 1.0 - currentUv.x),
         min(currentUv.y, 1.0 - currentUv.y)
       );
-      float frameLead = 1.0 - smoothstep(0.0, 0.050, uvEdge);
+      float frameLead = 1.0 - smoothstep(0.0, 0.015, uvEdge);
       float lead = max(cellLead, frameLead);
 
       vec3 normalTilt = vec3(
-        (localUv - closestCenter) * (1.0 - lead) * 0.24,
+        (localUv - closestCenter) * (1.0 - lead) * 0.55,
         0.0
       );
 
-      return MobileOrosi(glassColor * 1.15, lead, normalTilt);
+      return MobileOrosi(glassColor * 1.20, lead, normalTilt);
     }
 
     ${shader.fragmentShader}
@@ -142,17 +145,17 @@ function injectMobileOrosi(shader: any) {
     .replace(
       '#include <color_fragment>',
       `#include <color_fragment>
-       diffuseColor.rgb = mix(orosi.color, vec3(0.025), orosi.lead);`
+       diffuseColor.rgb = mix(orosi.color, vec3(0.05), orosi.lead);`
     )
     .replace(
       '#include <roughnessmap_fragment>',
       `#include <roughnessmap_fragment>
-       roughnessFactor = mix(0.035, 0.72, orosi.lead);`
+       roughnessFactor = mix(0.012, 0.84, orosi.lead);`
     )
     .replace(
       '#include <metalnessmap_fragment>',
       `#include <metalnessmap_fragment>
-       metalnessFactor = mix(0.02, 0.82, orosi.lead);`
+       metalnessFactor = mix(0.06, 0.95, orosi.lead);`
     )
     .replace(
       '#include <emissivemap_fragment>',
@@ -160,29 +163,53 @@ function injectMobileOrosi(shader: any) {
        totalEmissiveRadiance += orosi.color * (1.0 - orosi.lead) * 0.055;`
     )
 
-  // The dark lead remains opaque without needing a second mesh/draw call.
   shader.fragmentShader = shader.fragmentShader.replace(
     /material\.transmission\s*=\s*_transmission\s*;/,
     'material.transmission = _transmission * (1.0 - orosi.lead);'
   )
 }
 
-const ActiveMobileBakedCube: React.FC<{ currentPhase: number }> = ({ currentPhase }) => {
+interface ActiveMobileBakedCubeProps {
+  currentPhase: number
+  isActive: boolean
+  mode: string
+}
+
+const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPhase, isActive, mode }) => {
   const shellRef = useRef<Mesh>(null)
   const materialRef = useRef<DreiTransmissionRef>(null)
+  
+  // THE PARALLAX CHARM: Store the offset outside of React's render cycle!
+  const parallaxOffset = useRef({ x: 0, y: 0 })
+  
   const [hovered, setHovered] = useState(false)
+  const [inertBuffer] = useState(() => {
+    const texture = new DataTexture(
+      new Uint8Array([0, 0, 0, 255]),
+      1,
+      1,
+      RGBAFormat,
+      UnsignedByteType,
+    )
+    texture.needsUpdate = true
+    return texture
+  })
   const viewportWidth = useThree((state) => state.size.width)
   const { onPointerDown } = useCubeAdvance(goDeeper, currentPhase === 0)
 
-  const transmissionResolution = viewportWidth <= 480 ? 128 : 256
+  const transmissionResolution = viewportWidth <= 360 ? 256 : viewportWidth <= 520 ? 256 : 320
+  const backsideResolution = Math.floor(transmissionResolution / 2)
 
-  useCursor(hovered && currentPhase === 0, 'pointer', 'auto')
+  useCursor(hovered && isActive && currentPhase === 0, 'pointer', 'auto')
+
+  useEffect(() => {
+    return () => inertBuffer.dispose()
+  }, [inertBuffer])
 
   useLayoutEffect(() => {
     const material = materialRef.current as unknown as MeshPhysicalMaterial | null
     if (!material) return
 
-    // Preserve Drei's transmission compiler and inject Orosi after it.
     const compileTransmission = material.onBeforeCompile
     const previousCacheKey = material.customProgramCacheKey
 
@@ -199,20 +226,34 @@ const ActiveMobileBakedCube: React.FC<{ currentPhase: number }> = ({ currentPhas
     }
   }, [])
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
+    if (!isActive) return
     const shell = shellRef.current
     if (!shell) return
 
-    const elapsed = state.clock.elapsedTime
-    shell.rotation.x = worldState.cubeRotX
-    shell.rotation.y = worldState.cubeRotY + elapsed * 0.04
+    // THE PARALLAX CHARM: Logic applied safely within the render loop
+    if (currentPhase === 1 && mode === MODES.EXPLORE) {
+      // state.pointer holds normalized touch coordinates (-1 to 1).
+      // We multiply by 0.35 to keep the tilt subtle and elegant.
+      parallaxOffset.current.x = MathUtils.lerp(parallaxOffset.current.x, state.pointer.x * 0.35, delta * 4)
+      parallaxOffset.current.y = MathUtils.lerp(parallaxOffset.current.y, state.pointer.y * 0.35, delta * 4)
+    } else {
+      // If we leave the phase or mode, gently return the offset to zero
+      parallaxOffset.current.x = MathUtils.lerp(parallaxOffset.current.x, 0, delta * 4)
+      parallaxOffset.current.y = MathUtils.lerp(parallaxOffset.current.y, 0, delta * 4)
+    }
+
+    // Combine GSAP's strict timeline rotations with our dynamic touch offsets!
+    // Notice how pointer Y affects rotation X, and pointer X affects rotation Y.
+    shell.rotation.x = worldState.cubeRotX + parallaxOffset.current.y
+    shell.rotation.y = worldState.cubeRotY + parallaxOffset.current.x
     shell.rotation.z = worldState.cubeRotZ
-    shell.position.y = Math.sin(elapsed * 1.5) * 0.04
   })
 
   return (
     <mesh
       ref={shellRef}
+      visible={isActive}
       onPointerDown={onPointerDown}
       onPointerOver={(event) => {
         event.stopPropagation()
@@ -220,27 +261,28 @@ const ActiveMobileBakedCube: React.FC<{ currentPhase: number }> = ({ currentPhas
       }}
       onPointerOut={() => setHovered(false)}
     >
-      {/* Native BoxGeometry: six faces, each with clean local 0-1 UVs. */}
       <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
 
       <MeshTransmissionMaterial
         ref={materialRef}
+        buffer={isActive ? undefined : inertBuffer}
         samples={MOBILE_TRANSMISSION_SAMPLES}
         resolution={transmissionResolution}
         backside={true}
-        backsideResolution={1}
+        backsideResolution={backsideResolution}
+        backsideThickness={0.8}
         transmissionSampler={false}
-        transmission={0.94}
-        thickness={1.72}
-        roughness={0.015}
-        ior={1.48}
+        transmission={1}
+        thickness={1.5}
+        roughness={0.01}
+        ior={2.05}
         chromaticAberration={0}
         anisotropicBlur={0}
         distortion={0}
         temporalDistortion={0}
-        clearcoat={0.75}
-        clearcoatRoughness={0.12}
-        side={DoubleSide}
+        clearcoat={1}
+        clearcoatRoughness={0.05}
+        side={FrontSide}
         depthWrite
         toneMapped
       />
@@ -250,11 +292,12 @@ const ActiveMobileBakedCube: React.FC<{ currentPhase: number }> = ({ currentPhas
 
 const MobileBakedCube: React.FC = () => {
   const currentPhase = useExperience((state) => state.currentPhase)
+  const mode = useExperience((state) => state.mode)
+  const hasCompletedInteriorEntry = currentPhase === 2 && mode === MODES.EXPLORE
+  const isActive = !hasCompletedInteriorEntry && currentPhase < 3
 
-  // This unmounts Drei's refraction FBO and its frame subscription.
-  if (currentPhase >= 3) return null
-
-  return <ActiveMobileBakedCube currentPhase={currentPhase} />
+  // Pass the mode down to our active component so it knows when to tilt!
+  return <ActiveMobileBakedCube currentPhase={currentPhase} isActive={isActive} mode={mode} />
 }
 
 export default MobileBakedCube

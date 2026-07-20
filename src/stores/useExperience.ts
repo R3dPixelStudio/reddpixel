@@ -19,9 +19,10 @@ interface ExperienceState {
   isCubeReady: boolean;
   setCubeReady: () => void;
   setPhase: (phase: number) => void;
-  setMode: (mode: ModeType) => void; 
+  setMode: (mode: ModeType) => void;
   setIsTransitioning: (status: boolean) => void;
-  setHardwareProfile: (isMobile: boolean, isLowEnd: boolean) => void;
+  setMobileLayout: (isMobile: boolean) => void;
+  setHardwareProfile: (isLowEnd: boolean) => void;
   showTraversalControls: () => boolean;
 }
 
@@ -36,7 +37,8 @@ export const useExperience = create<ExperienceState>((set, get) => ({
   setPhase: (phase) => set({ currentPhase: Math.max(0, Math.min(phase, 3)) }),
   setMode: (mode) => set({ mode }),
   setIsTransitioning: (status) => set({ isTransitioning: status }),
-  setHardwareProfile: (isMobile, isLowEnd) => set({ isMobile, isLowEnd }),
+  setMobileLayout: (isMobile) => set({ isMobile }),
+  setHardwareProfile: (isLowEnd) => set({ isLowEnd }),
   
   showTraversalControls: () => {
     return get().currentPhase > 0;
