@@ -9,7 +9,7 @@ export async function onRequest(context: CmsContext): Promise<Response> {
   const { request, env } = context
   const route = new URL(request.url).pathname.replace(/^\/api\/cms\/?/, '').replace(/\/$/, '')
   if (request.method === 'GET' && route === 'work') return json({ items: await works(env) })
-  if (!env.CMS_DB || !env.ADMIN_PASSWORD_HASH) return json({ error: 'Content studio is not configured. Bind CMS_DB and set ADMIN_PASSWORD_HASH.' }, 503)
+  if (!env.CMS_DB || !env.ADMIN_PASSWORD_HASH) return json({ code: 'CMS_NOT_CONFIGURED', error: 'Content studio is not configured. Bind CMS_DB and set ADMIN_PASSWORD_HASH.' }, 503)
   const db = env.CMS_DB
   try {
     const auth = await session(request, env)

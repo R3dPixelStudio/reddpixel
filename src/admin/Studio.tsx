@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, setCsrf } from './api'
+import { api, setCsrf, StudioApiError } from './api'
 import { articleText, articleSections } from './editor'
 import { type CmsPost, type CmsWork, type CmsComment, type CmsMedia } from '../content/cms'
 import Signature from '../ui/art/Signature'
@@ -11,6 +11,7 @@ const newWork = (): CmsWork => ({ id: crypto.randomUUID(), branch: 'web', title:
 
 export default function Studio() {
   const [auth, setAuth] = useState<boolean | null>(null)
+  const [needsSetup, setNeedsSetup] = useState(false)
   const [page, setPage] = useState<Page>('posts')
   const [entries, setEntries] = useState<Entry[]>([])
   const [editing, setEditing] = useState<CmsPost | CmsWork | null>(null)
@@ -25,7 +26,7 @@ export default function Studio() {
   useEffect(() => {
     live.current = true
     const controller = new AbortController()
-    api<{ authenticated: boolean; csrf: string }>('session', {}, controller.signal).then(s => { setCsrf(s.csrf ?? ''); setAuth(s.authenticated) }).catch(e => { if (!controller.signal.aborted) { setAuth(false); setError(e.message) } })
+    api<{ authenticated: boolean; csrf: string }>('session', {}, controller.signal).then(s => { if (!controller.signal.aborted) { setCsrf(s.csrf ?? ''); setAuth(s.authenticated) } }).catch(e => { if (!controller.signal.aborted) { setAuth(false); if (e instanceof StudioApiError && e.code === 'CMS_NOT_CONFIGURED') setNeedsSetup(true); else setError(e.message) } })
     const activeRequests = requests.current
     return () => { live.current = false; controller.abort(); for (const request of activeRequests) request.abort(); activeRequests.clear() }
   }, [])
@@ -48,7 +49,7 @@ export default function Studio() {
   const switchPage = (next: Page) => { if (busy || editing && !confirm('Discard unsaved changes and switch sections?')) return; setPage(next); setEditing(null); setEntries([]); setError(''); setNotice('') }
   return <div className="studio-shell"><header className="studio-header"><a href="/blog/">REDDPIXEL / CONTENT STUDIO</a><Signature /><a href="/">Portfolio ↗</a></header>
     {error && <p role="alert" className="studio-error">{error}</p>}{notice && <p role="status" className="studio-notice">{notice}</p>}
-    {auth === null ? <p role="status">Opening the studio…</p> : !auth ? <section className="studio-login"><p className="eyebrow">PRIVATE WORKSPACE</p><h1>Behind the red glass.</h1><p>Write field notes. Curate the work. Keep the conversation going.</p><form onSubmit={event => { event.preventDefault(); const password = new FormData(event.currentTarget).get('password'); void mutate<{ authenticated: boolean; csrf: string }>('session', { method: 'POST', body: JSON.stringify({ password }) }, s => { setCsrf(s.csrf); setAuth(s.authenticated); setNotice('Welcome back.') }) }}><label>Studio password<input type="password" name="password" autoComplete="current-password" minLength={16} maxLength={256} required /></label><button disabled={busy}>{busy ? 'Signing in…' : 'Enter studio ↗'}</button></form><p className="studio-hint">First setup is documented in docs/CMS.md. The studio stays locked until storage and a password hash are configured.</p></section> : <>
+    {auth === null ? <p role="status">Opening the studio…</p> : needsSetup ? <section className="studio-login"><p className="eyebrow">FIRST SETUP</p><h1>Connect the studio.</h1><p>The live studio needs its Cloudflare storage and password configuration before you can sign in.</p><ol><li>Bind your D1 database as <code>CMS_DB</code> and apply the database migration.</li><li>Bind your media bucket as <code>CMS_MEDIA</code> for uploads.</li><li>Add your password hash as the <code>ADMIN_PASSWORD_HASH</code> secret.</li><li>Redeploy the production site, then return here.</li></ol><p className="studio-hint">Follow docs/CMS.md in your project folder. Choose your password privately; use the generated hash in Cloudflare.</p><button onClick={() => window.location.reload()}>Check setup again ↗</button></section> : !auth ? <section className="studio-login"><p className="eyebrow">PRIVATE WORKSPACE</p><h1>Behind the red glass.</h1><p>Write field notes. Curate the work. Keep the conversation going.</p><form onSubmit={event => { event.preventDefault(); const password = new FormData(event.currentTarget).get('password'); void mutate<{ authenticated: boolean; csrf: string }>('session', { method: 'POST', body: JSON.stringify({ password }) }, s => { setCsrf(s.csrf); setAuth(s.authenticated); setNotice('Welcome back.') }) }}><label>Studio password<input type="password" name="password" autoComplete="current-password" minLength={16} maxLength={256} required /></label><button disabled={busy}>{busy ? 'Signing in…' : 'Enter studio ↗'}</button></form><p className="studio-hint">First setup is documented in docs/CMS.md. The studio stays locked until storage and a password hash are configured.</p></section> : <>
       <nav className="studio-nav" aria-label="Studio sections">{(['posts', 'works', 'comments', 'media'] as Page[]).map(item => <button key={item} aria-current={page === item ? 'page' : undefined} disabled={busy} onClick={() => switchPage(item)}>{item === 'works' ? 'Work collections' : item}</button>)}<button disabled={busy} onClick={() => { if (editing && !confirm('Discard unsaved changes and sign out?')) return; void mutate('session', { method: 'DELETE' }, () => { setCsrf(''); setAuth(false); setEditing(null); setEntries([]) }) }}>Sign out</button></nav>
       {loading && <p role="status">Loading {page}…</p>}
       {editing && 'slug' in editing ? <PostEditor key={editing.slug || 'new'} item={editing} busy={busy} cancel={() => { if (confirm('Discard unsaved changes?')) setEditing(null) }} save={item => void mutate('posts', { method: 'PUT', body: JSON.stringify(item) }, saved)} /> : editing ? <WorkEditor key={editing.id} item={editing} busy={busy} cancel={() => { if (confirm('Discard unsaved changes?')) setEditing(null) }} save={item => void mutate('works', { method: 'PUT', body: JSON.stringify(item) }, saved)} /> : <main>
