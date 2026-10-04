@@ -1,43 +1,12 @@
-import React, { useEffect, useState } from 'react'
 import { useExperience } from '../stores/useExperience'
 
-const GuidanceOverlay: React.FC = () => {
-  const currentPhase = useExperience((state) => state.currentPhase)
-  const isTransitioning = useExperience((state) => state.isTransitioning)
-  const [navHintsVisible, setNavHintsVisible] = useState<boolean>(false)
-  const showLandingHint = currentPhase === 0 && !isTransitioning
-
-  useEffect(() => {
-    let hideTimer: number | null = null
-    const updateFrame = window.requestAnimationFrame(() => {
-      const shouldShow = currentPhase > 0
-      setNavHintsVisible(shouldShow)
-
-      if (shouldShow) {
-        hideTimer = window.setTimeout(() => setNavHintsVisible(false), 3000)
-      }
-    })
-
-    return () => {
-      window.cancelAnimationFrame(updateFrame)
-      if (hideTimer !== null) clearTimeout(hideTimer)
-    }
-  }, [currentPhase])
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[100]">
-      <div className={`absolute bottom-[15%] left-1/2 -translate-x-1/2 transition-all duration-1000 flex flex-col items-center gap-3 ${showLandingHint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="w-[1px] h-12 bg-gradient-to-t from-red-500 to-transparent" />
-        <p className={`font-mono text-xs text-center tracking-[0.3em] text-red-400 uppercase ${showLandingHint ? 'animate-pulse' : ''}`}>Click artifact to initiate</p>
-      </div>
-
-      <div className={`absolute bottom-[12%] left-1/2 -translate-x-1/2 w-64 h-24 transition-opacity duration-1000 ${navHintsVisible && !isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="absolute bottom-0 left-0 font-mono text-[9px] tracking-widest text-white/50">&#8592; PREV</p>
-        
-        <p className="absolute bottom-0 right-0 font-mono text-[9px] tracking-widest text-white/50">NEXT &#8594;</p>
-      </div>
-    </div>
-  )
+export default function GuidanceOverlay() {
+  const phase = useExperience(state => state.currentPhase)
+  const moving = useExperience(state => state.isTransitioning)
+  const ready = useExperience(state => state.isCubeReady)
+  const mobile = useExperience(state => state.isMobile)
+  return <div className="cube-touch-prompt" data-active={phase === 0 && ready && !moving} aria-hidden="true">
+    <svg viewBox="0 0 48 48" fill="none"><path className="tap-rays" d="M24 5V2 M14 9l-3-3 M34 9l3-3" /><path d="M20 26V14a4 4 0 0 1 8 0v9l3-2 4 2 3 1v10l-5 9H21l-8-12a3 3 0 0 1 4-4l3 3" /><path d="M28 23v8 M33 24v7" /></svg>
+    <span>{mobile ? 'Tap to enter · Swipe to rotate' : 'Click the cube'}</span>
+  </div>
 }
-
-export default GuidanceOverlay

@@ -6,6 +6,7 @@ export const FIRST_INTERIOR_PHASE = 1
 export const MAX_PHASE = 3
 
 const TRANSITION_DURATION = 1.2
+const duration = (seconds: number) => useExperience.getState().reducedMotion ? 0.01 : seconds
 const CAMERA_TWEEN_PROPERTIES = 'cameraX,cameraY,cameraZ,targetX,targetY,targetZ'
 const EXPLORE_TWEEN_PROPERTIES = 'targetX,targetY,cubeRotX,cubeRotY,cubeRotZ'
 
@@ -13,6 +14,17 @@ let cameraTween: gsap.core.Tween | null = null
 let exploreTween: gsap.core.Tween | null = null
 let blackoutTween: gsap.core.Tween | null = null
 let blackoutElement: HTMLDivElement | null = null
+let settleTween: gsap.core.Tween | null = null
+
+// Keep rendered frames alive until the world tweens and shader fades settle.
+const keepSceneMoving = (seconds: number) => {
+  settleTween?.kill()
+  useExperience.getState().setSceneSettling(true)
+  settleTween = gsap.delayedCall(duration(seconds), () => {
+    settleTween = null
+    useExperience.getState().setSceneSettling(false)
+  })
+}
 
 const getCameraPositions = (isMobile: boolean) => [
   { z: isMobile ? 14 : 14, y: 1.5, targetX: 0, targetY: 0, targetZ: 0 },
@@ -58,6 +70,7 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
 
   killCameraTween()
 
+  keepSceneMoving(TRANSITION_DURATION + 2)
   const tween = gsap.to(worldState, {
     cameraX: 0,
     cameraY: target.y,
@@ -65,7 +78,8 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
     targetX: target.targetX,
     targetY: target.targetY,
     targetZ: target.targetZ,
-    duration: TRANSITION_DURATION,
+    duration: duration(TRANSITION_DURATION),
+    overwrite: 'auto',
     ease: 'power3.inOut',
     onComplete: () => {
       if (cameraTween === tween) cameraTween = null
@@ -78,6 +92,8 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
 
 export const syncCameraToLayout = (): void => {
   const state = useExperience.getState()
+  // Startup navigation is resumed when the scene is ready, from its visible origin.
+  if (!state.isCubeReady) return
   if (state.currentPhase > 1) return
 
   const target = getCameraPositions(state.isMobile)[state.currentPhase]
@@ -86,7 +102,7 @@ export const syncCameraToLayout = (): void => {
   // Fetch our new combined X and Y targets
   const aboutExploreTarget = getAboutExploreTarget(state.isMobile)
 
-  if (!state.isCubeReady || blackoutElement) {
+  if (blackoutElement) {
     killCameraTween()
     Object.assign(worldState, {
       cameraX: 0,
@@ -106,6 +122,7 @@ export const syncCameraToLayout = (): void => {
 
   killCameraTween()
 
+  keepSceneMoving(2)
   const tween = gsap.to(worldState, {
     cameraX: 0,
     cameraY: target.y,
@@ -113,7 +130,7 @@ export const syncCameraToLayout = (): void => {
     targetX: isAboutExplore ? aboutExploreTarget.x : target.targetX,
     targetY: isAboutExplore ? aboutExploreTarget.y : target.targetY, // Updated to use dynamic Y
     targetZ: target.targetZ,
-    duration: 0.65,
+    duration: duration(0.65),
     ease: 'power3.inOut',
     onComplete: () => {
       if (cameraTween === tween) cameraTween = null
@@ -126,7 +143,7 @@ export const syncCameraToLayout = (): void => {
 const removeBlackout = () => {
   blackoutTween?.kill()
   blackoutTween = null
-  gsap.killTweensOf(blackoutElement)
+  if (blackoutElement) gsap.killTweensOf(blackoutElement)
   blackoutElement?.remove()
   blackoutElement = null
 }
@@ -156,6 +173,11 @@ const resetToLanding = () => {
 
 const cycleToLanding = () => {
   const state = useExperience.getState()
+  if (state.reducedMotion) {
+    resetToLanding()
+    state.setIsTransitioning(false)
+    return
+  }
   state.setIsTransitioning(true)
 
   if (!blackoutElement) {
@@ -205,45 +227,47 @@ export const goDeeper = (): void => {
     return
   }
 
-  state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode()
-
-  const nextPhase = state.currentPhase + 1
-  state.setPhase(nextPhase)
-  animateCameraToPhase(nextPhase, () => finishTransition(nextPhase))
+  jumpToPhase(state.currentPhase + 1)
 }
 
 export const goBack = (): void => {
   const state = useExperience.getState()
   if (state.isTransitioning || state.currentPhase <= 0) return
 
-  state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode()
-
-  const previousPhase = state.currentPhase - 1
-  state.setPhase(previousPhase)
-  if (previousPhase === 0) state.setMode(MODES.LANDING)
-
-  animateCameraToPhase(previousPhase, () => finishTransition(previousPhase))
+  jumpToPhase(state.currentPhase - 1)
 }
 
 export const jumpToPhase = (targetPhase: number): void => {
   const state = useExperience.getState()
-  const targetIsInvalid = targetPhase < 0 || targetPhase > MAX_PHASE
+  const targetIsInvalid = !Number.isInteger(targetPhase) || targetPhase < 0 || targetPhase > MAX_PHASE
 
-  if (targetIsInvalid || state.isTransitioning || targetPhase === state.currentPhase) return
+  const isSettledAtTarget = targetPhase === state.currentPhase && !state.isTransitioning &&
+    (targetPhase === 0 ? state.mode === MODES.LANDING : state.mode === MODES.EXPLORE)
+  if (targetIsInvalid || isSettledAtTarget) return
+  removeBlackout()
+  killCameraTween()
+  killExploreTween()
 
   state.setIsTransitioning(true)
-  if (state.mode === MODES.EXPLORE) exitExploreMode()
+  if (state.isCubeReady && state.mode === MODES.EXPLORE) exitExploreMode()
 
   state.setPhase(targetPhase)
-  if (targetPhase === 0) state.setMode(MODES.LANDING)
+  state.setMode(targetPhase === 0 ? MODES.LANDING : MODES.TRAVERSAL)
+
+  // Keep the latest destination pending; no invisible tweens during shader compilation.
+  if (!state.isCubeReady) return
 
   animateCameraToPhase(targetPhase, () => finishTransition(targetPhase))
 }
 
+export const resumePendingPhase = (): void => {
+  const state = useExperience.getState()
+  if (state.isCubeReady && state.isTransitioning) jumpToPhase(state.currentPhase)
+}
+
 export const enterExploreMode = (): void => {
   const state = useExperience.getState()
+  keepSceneMoving(2)
   state.setMode(MODES.EXPLORE)
 
   if (state.currentPhase !== 1) return
@@ -258,10 +282,10 @@ export const enterExploreMode = (): void => {
   exploreTween = gsap.to(worldState, {
     targetX: exploreTarget.x,
     targetY: exploreTarget.y, // No longer hardcoded to 0!
-    cubeRotX: randomSpinX,
-    cubeRotY: randomSpinY,
-    cubeRotZ: (Math.random() - 0.5) * Math.PI * 0.5,
-    duration: 1.5,
+    cubeRotX: state.reducedMotion ? 0.2 : randomSpinX,
+    cubeRotY: state.reducedMotion ? -0.3 : randomSpinY,
+    cubeRotZ: state.reducedMotion ? 0 : (Math.random() - 0.5) * Math.PI * 0.5,
+    duration: duration(1.5),
     ease: 'power3.inOut',
     onComplete: () => {
       exploreTween = null
@@ -283,7 +307,7 @@ export const exitExploreMode = (): void => {
     cubeRotX: 0,
     cubeRotY: 0,
     cubeRotZ: 0,
-    duration: 1,
+    duration: duration(1),
     ease: 'power3.inOut',
     onComplete: () => {
       exploreTween = null
@@ -292,7 +316,11 @@ export const exitExploreMode = (): void => {
 }
 
 export const destroyCinematicController = (): void => {
+  settleTween?.kill()
+  settleTween = null
+  useExperience.getState().setSceneSettling(false)
   killCameraTween()
   killExploreTween()
   removeBlackout()
+  useExperience.getState().setIsTransitioning(false)
 }

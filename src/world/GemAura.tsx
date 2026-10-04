@@ -51,7 +51,7 @@ const GemAura: React.FC = () => {
     gsap.killTweensOf(driver)
     const tween = gsap.to(driver, {
       value: currentPhase === 0 ? 1 : 0,
-      duration: 1.5,
+      duration: useExperience.getState().reducedMotion ? 0.01 : 1.5,
       ease: 'power3.inOut'
     })
 
@@ -86,7 +86,7 @@ const GemAura: React.FC = () => {
   useFrame((state) => {
     if (!meshRef.current || currentPhase >= 2) return
     const mat = meshRef.current.material as ShaderMaterial
-    mat.uniforms.uTime.value = state.clock.elapsedTime
+    mat.uniforms.uTime.value = useExperience.getState().reducedMotion ? 5 : state.clock.elapsedTime
     mat.uniforms.uLanding.value = phaseDriver.current.value
 
     meshRef.current.quaternion.copy(state.camera.quaternion)

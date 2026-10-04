@@ -5,16 +5,18 @@ import { useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
+import { cubeInteraction } from './cubeInteraction'
 
 const CUBE_HALF = 1.0
 
 interface Props {
   shellRef: React.RefObject<Mesh | null>
+  presentation?: boolean
 }
 
-const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
+const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false }) => {
   const currentPhase = useExperience((state) => state.currentPhase)
-  const { onPointerDown } = useCubeAdvance(goDeeper, currentPhase === 0)
+  const { onPointerDown } = useCubeAdvance(goDeeper, !presentation && currentPhase <= 1)
 
   const { geometry, material, depthMaterial } = useMemo(() => {
     const geo = new BoxGeometry(CUBE_HALF * 2.0, CUBE_HALF * 2.0, CUBE_HALF * 2.0)
@@ -160,12 +162,17 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
     }
   }, [geometry, material, depthMaterial])
 
-  useFrame(() => {
+  useFrame((state) => {
+    if (presentation && shellRef.current) {
+      const t = useExperience.getState().reducedMotion ? 3 : state.clock.elapsedTime
+      shellRef.current.rotation.set(.35 + Math.sin(t * .15) * .12, .6 + t * .12, .12)
+      return
+    }
     if (currentPhase >= 3) return;
 
     if (shellRef.current) {
-      shellRef.current.rotation.x = worldState.cubeRotX
-      shellRef.current.rotation.y = worldState.cubeRotY
+      shellRef.current.rotation.x = worldState.cubeRotX + cubeInteraction.rotationX
+      shellRef.current.rotation.y = worldState.cubeRotY + cubeInteraction.rotationY
       shellRef.current.rotation.z = worldState.cubeRotZ
     }
   })
@@ -174,9 +181,9 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef }) => {
       <mesh 
         ref={shellRef}
         geometry={geometry} material={material} customDepthMaterial={depthMaterial} castShadow 
-        visible={currentPhase < 3} 
-        onPointerDown={onPointerDown}
-        onPointerOver={() => { if (currentPhase === 0) document.body.style.cursor = 'pointer' }}
+        visible={presentation || currentPhase < 3} 
+        onPointerDown={presentation ? undefined : onPointerDown}
+        onPointerOver={() => { if (!presentation && currentPhase === 0) document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { document.body.style.cursor = 'auto' }}
       />
       

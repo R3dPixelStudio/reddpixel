@@ -6,7 +6,6 @@ import {
   FrontSide,
   RGBAFormat,
   UnsignedByteType,
-  MathUtils, 
   type Mesh,
   type MeshPhysicalMaterial,
 } from 'three'
@@ -14,10 +13,11 @@ import { MODES, useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
+import { cubeInteraction } from './cubeInteraction'
 
 const CUBE_SIZE = 2
 const MOBILE_TRANSMISSION_SAMPLES = 4
-const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v4-custom-fbo-s${MOBILE_TRANSMISSION_SAMPLES}`
+const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v5-filtered-edges-s${MOBILE_TRANSMISSION_SAMPLES}`
 
 type DreiTransmissionRef = React.ElementRef<typeof MeshTransmissionMaterial>
 
@@ -114,12 +114,12 @@ function injectMobileOrosi(shader: CompilableShader) {
                              vec3(0.0, 0.2, 0.8);
 
       float distanceGap = max(secondDist - closestDist, 0.0);
-      float cellLead = 1.0 - smoothstep(0.0, 0.042, distanceGap);
+      float cellLead = 1.0 - smoothstep(0.0, max(0.042, fwidth(distanceGap)), distanceGap);
       float uvEdge = min(
         min(currentUv.x, 1.0 - currentUv.x),
         min(currentUv.y, 1.0 - currentUv.y)
       );
-      float frameLead = 1.0 - smoothstep(0.0, 0.015, uvEdge);
+      float frameLead = 1.0 - smoothstep(0.0, max(0.015, fwidth(uvEdge)), uvEdge);
       float lead = max(cellLead, frameLead);
 
       vec3 normalTilt = vec3(
@@ -150,7 +150,7 @@ function injectMobileOrosi(shader: CompilableShader) {
     .replace(
       '#include <roughnessmap_fragment>',
       `#include <roughnessmap_fragment>
-       roughnessFactor = mix(0.012, 0.84, orosi.lead);`
+       roughnessFactor = mix(0.02, 0.84, orosi.lead);`
     )
     .replace(
       '#include <metalnessmap_fragment>',
@@ -172,15 +172,11 @@ function injectMobileOrosi(shader: CompilableShader) {
 interface ActiveMobileBakedCubeProps {
   currentPhase: number
   isActive: boolean
-  mode: string
 }
 
-const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPhase, isActive, mode }) => {
+const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPhase, isActive }) => {
   const shellRef = useRef<Mesh>(null)
   const materialRef = useRef<DreiTransmissionRef>(null)
-  
-  // THE PARALLAX CHARM: Store the offset outside of React's render cycle!
-  const parallaxOffset = useRef({ x: 0, y: 0 })
   
   const [hovered, setHovered] = useState(false)
   const [inertBuffer] = useState(() => {
@@ -195,9 +191,9 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
     return texture
   })
   const viewportWidth = useThree((state) => state.size.width)
-  const { onPointerDown } = useCubeAdvance(goDeeper, currentPhase === 0)
+  const { onPointerDown } = useCubeAdvance(goDeeper, isActive && currentPhase <= 1)
 
-  const transmissionResolution = viewportWidth <= 360 ? 256 : viewportWidth <= 520 ? 256 : 320
+  const transmissionResolution = viewportWidth <= 360 ? 256 : 320
   const backsideResolution = Math.floor(transmissionResolution / 2)
 
   useCursor(hovered && isActive && currentPhase === 0, 'pointer', 'auto')
@@ -226,30 +222,14 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
     }
   }, [])
 
-  useFrame((state, delta) => {
-    if (!isActive) return
-    const shell = shellRef.current
-    if (!shell) return
-
-    // THE PARALLAX CHARM: Logic applied safely within the render loop
-    if (currentPhase === 1 && mode === MODES.EXPLORE) {
-      // state.pointer holds normalized touch coordinates (-1 to 1).
-      // We multiply by 0.35 to keep the tilt subtle and elegant.
-      parallaxOffset.current.x = MathUtils.lerp(parallaxOffset.current.x, state.pointer.x * 0.35, delta * 4)
-      parallaxOffset.current.y = MathUtils.lerp(parallaxOffset.current.y, state.pointer.y * 0.35, delta * 4)
-    } else {
-      // If we leave the phase or mode, gently return the offset to zero
-      parallaxOffset.current.x = MathUtils.lerp(parallaxOffset.current.x, 0, delta * 4)
-      parallaxOffset.current.y = MathUtils.lerp(parallaxOffset.current.y, 0, delta * 4)
-    }
-
-    // Combine GSAP's strict timeline rotations with our dynamic touch offsets!
-    // Notice how pointer Y affects rotation X, and pointer X affects rotation Y.
-    shell.rotation.x = worldState.cubeRotX + parallaxOffset.current.y
-    shell.rotation.y = worldState.cubeRotY + parallaxOffset.current.x
-    shell.rotation.z = worldState.cubeRotZ
+  useFrame(() => {
+    if (!isActive || !shellRef.current) return
+    shellRef.current.rotation.set(
+      worldState.cubeRotX + cubeInteraction.rotationX,
+      worldState.cubeRotY + cubeInteraction.rotationY,
+      worldState.cubeRotZ,
+    )
   })
-
   return (
     <mesh
       ref={shellRef}
@@ -297,7 +277,7 @@ const MobileBakedCube: React.FC = () => {
   const isActive = !hasCompletedInteriorEntry && currentPhase < 3
 
   // Pass the mode down to our active component so it knows when to tilt!
-  return <ActiveMobileBakedCube currentPhase={currentPhase} isActive={isActive} mode={mode} />
+  return <ActiveMobileBakedCube currentPhase={currentPhase} isActive={isActive} />
 }
 
 export default MobileBakedCube

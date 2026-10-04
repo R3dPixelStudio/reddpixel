@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect } from 'react'
 import { SphereGeometry, ShaderMaterial, BackSide, MathUtils, Vector2, Mesh } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useExperience, MODES } from '../stores/useExperience'
+import { innerWorldReveal } from './cubeInteraction'
 
 
 const InnerWorldEnvironment: React.FC = () => {
@@ -16,8 +17,6 @@ const InnerWorldEnvironment: React.FC = () => {
   const uOpacityTarget = useRef(0)
   const uTravelTarget = useRef(0)
   const uPanTarget = useRef(0)
-  const prevPhaseRef = useRef(currentPhase)
-  const fadeTimerRef = useRef<number | null>(null)
 
   const uniforms = useMemo(() => ({
       uTime: { value: 0 },
@@ -28,35 +27,9 @@ const InnerWorldEnvironment: React.FC = () => {
   }), [])
 
   useEffect(() => {
-    if (fadeTimerRef.current !== null) {
-      clearTimeout(fadeTimerRef.current)
-      fadeTimerRef.current = null
-    }
-
-    if (currentPhase >= 2) {
-       if (prevPhaseRef.current < 2) {
-         fadeTimerRef.current = window.setTimeout(() => {
-           uOpacityTarget.current = 1
-           fadeTimerRef.current = null
-         }, 1200)
-       } else {
-         uOpacityTarget.current = 1
-       }
-
-       uTravelTarget.current = (currentPhase - 2) * (Math.PI / 2.0)
-    } else {
-       uOpacityTarget.current = 0
-    }
-
+    uOpacityTarget.current = currentPhase >= 2 ? 1 : 0
+    if (currentPhase >= 2) uTravelTarget.current = (currentPhase - 2) * (Math.PI / 2)
     uPanTarget.current = mode === MODES.EXPLORE && currentPhase >= 2 ? 0.3 : 0
-    prevPhaseRef.current = currentPhase
-
-    return () => {
-      if (fadeTimerRef.current !== null) {
-        clearTimeout(fadeTimerRef.current)
-        fadeTimerRef.current = null
-      }
-    }
   }, [currentPhase, mode])
       
 
@@ -176,6 +149,20 @@ const InnerWorldEnvironment: React.FC = () => {
     if (!envRef.current) return
     const activeMaterial = envRef.current.material as ShaderMaterial
     const activeUniforms = activeMaterial.uniforms
+    const passage = innerWorldReveal(state.camera.position.z)
+    if (passage === 0) {
+      activeUniforms.uOpacity.value = 0
+      activeUniforms.uTravelOffset.value = uTravelTarget.current
+      activeUniforms.uExplorePan.value = uPanTarget.current
+      envRef.current.visible = false
+      return
+    }
+    const reduced = useExperience.getState().reducedMotion
+    if (reduced) {
+      activeUniforms.uOpacity.value = uOpacityTarget.current
+      activeUniforms.uTravelOffset.value = uTravelTarget.current
+      activeUniforms.uExplorePan.value = uPanTarget.current
+    }
 
     const isDormant = activeUniforms.uOpacity.value <= 0.001 && uOpacityTarget.current === 0
     if (isDormant) {
@@ -185,13 +172,13 @@ const InnerWorldEnvironment: React.FC = () => {
       return
     }
 
-    activeUniforms.uOpacity.value = MathUtils.damp(activeUniforms.uOpacity.value, uOpacityTarget.current, 3, delta)
+    activeUniforms.uOpacity.value = Math.min(passage, MathUtils.damp(activeUniforms.uOpacity.value, uOpacityTarget.current, 5, delta))
     activeUniforms.uTravelOffset.value = MathUtils.damp(activeUniforms.uTravelOffset.value, uTravelTarget.current, 2, delta)
     activeUniforms.uExplorePan.value = MathUtils.damp(activeUniforms.uExplorePan.value, uPanTarget.current, 3, delta)
 
-    activeUniforms.uTime.value = state.clock.elapsedTime
-    activeUniforms.uPointer.value.x = MathUtils.lerp(activeUniforms.uPointer.value.x, state.pointer.x, 0.05)
-    activeUniforms.uPointer.value.y = MathUtils.lerp(activeUniforms.uPointer.value.y, state.pointer.y, 0.05)
+    activeUniforms.uTime.value = reduced ? 5 : state.clock.elapsedTime
+    activeUniforms.uPointer.value.x = MathUtils.damp(activeUniforms.uPointer.value.x, reduced ? 0 : state.pointer.x, 3, delta)
+    activeUniforms.uPointer.value.y = MathUtils.damp(activeUniforms.uPointer.value.y, reduced ? 0 : state.pointer.y, 3, delta)
 
     envRef.current.visible = activeUniforms.uOpacity.value > 0.005
   })

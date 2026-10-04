@@ -1,0 +1,3 @@
+# Generate a PBKDF2 hash with npm run cms:password.
+ADMIN_PASSWORD_HASH="pbkdf2:100000:REPLACE_WITH_32_HEX_SALT:REPLACE_WITH_64_HEX_HASH"
+# Preserve existing GROQ_API_KEY and optional ALLOWED_ORIGIN here.
