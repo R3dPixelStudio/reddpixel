@@ -46,16 +46,26 @@ There is a hidden bot field and a persistent per-IP submission limit. Login atte
 
 ## Connect the live site
 
-No remote resources or deployment were created by this task. The local configuration uses the explicit placeholder database ID `local-reddpixel-cms`.
+The website is deployed, but the live content studio also needs its database, media bucket and password secret. The local configuration uses the explicit placeholder database ID `local-reddpixel-cms`; local bindings do not configure production.
 
 The existing Pages project is `reddpixel`. The repository's Wrangler file is local-only: it omits `pages_build_output_dir`, so it will not replace the live dashboard configuration. See [DEPLOYMENT.md](DEPLOYMENT.md) for the GitHub preview and production workflow.
 
-1. In your existing Cloudflare account, create/select a D1 database and an R2 bucket for this portfolio. The optional CLI commands are `npx wrangler d1 create reddpixel-cms` and `npx wrangler r2 bucket create reddpixel-media`.
+1. In your existing Cloudflare account, create/select a D1 database named `reddpixel-cms` and an R2 bucket named `reddpixel-media` for this portfolio. If R2 requests billing activation, complete that yourself after reviewing its terms. The optional CLI commands are `npx wrangler d1 create reddpixel-cms` and `npx wrangler r2 bucket create reddpixel-media`.
 2. Bind **CMS_DB** and **CMS_MEDIA** to the existing Pages project in its dashboard. Preserve its existing Groq and origin configuration. If switching to configuration in source control, back up the local file and download/review the existing live configuration first; only then opt in with `pages_build_output_dir` and real resource IDs.
 3. Apply `migrations/0001_cms.sql` to the selected live database. For CLI migrations, use a reviewed configuration containing that database's real ID, then run `npx wrangler d1 migrations apply CMS_DB --remote --config <reviewed-config-path>`. Confirm the database/account first; the current local placeholder is not a live migration target.
 4. Choose your production password using `npm run cms:password`, then set **ADMIN_PASSWORD_HASH** as a secret in the existing Pages project. Set a separate preview secret if using preview deployments. The raw password never belongs in frontend code.
 5. Build and deploy to the existing Pages project with its normal pipeline, including this repository's `functions/` directory. Do not deploy to a guessed project name.
 6. Check `/admin/`, draft preview privacy, a real upload/video, comment approval, published article HTML and `/sitemap.xml` on the actual HTTPS domain.
+
+### Dashboard setup when Wrangler sign-in fails
+
+- Open **D1 SQL database → reddpixel-cms → Console**. Copy the complete SQL from `migrations/0001_cms.sql` and execute it. It creates the studio tables and indexes without deleting existing tables. Confirm you selected this portfolio's database before executing it.
+- Open **Workers & Pages → reddpixel → Settings → Bindings** and select the **Production** environment. Add a D1 binding named exactly `CMS_DB`, selecting `reddpixel-cms`. Add an R2 binding named exactly `CMS_MEDIA`, selecting `reddpixel-media`.
+- In your own terminal, inside `E:\my final redd`, run `npm run cms:password` and choose your private password. Open the ignored `.dev.vars` file yourself and copy only the value of `ADMIN_PASSWORD_HASH`, without surrounding quotation marks. Do not paste the file or password into chat.
+- In the project's **Settings → Variables and Secrets**, select **Production** and add `ADMIN_PASSWORD_HASH` as a secret with that hash value. Preserve existing variables and secrets.
+- Redeploy the latest production commit from **Deployments**. Bindings and secret changes need a new deployment. Reopen `https://reddpixel.com/admin/` and sign in with your chosen password.
+
+Preview deployments have their own environment settings. Configure them separately if you need the studio in previews. The public portfolio and repository blog work while the studio is unconfigured; `/admin/` shows setup instructions instead of a password form until its required bindings are present.
 
 Local data does not automatically copy to production. Changing the database ID may also create a separate local database namespace; rerun local migrations for that ID. Keep local backups before switching. Choose which real content to move deliberately.
 
