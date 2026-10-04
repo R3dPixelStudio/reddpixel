@@ -1,127 +1,117 @@
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useDetectGPU, useProgress } from '@react-three/drei'
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useExperience } from './stores/useExperience'
-import { syncCameraToLayout } from './core/timeline/cinematicController'
-import Experience from './world/Experience'
+import { jumpToPhase, syncCameraToLayout } from './core/timeline/cinematicController'
 import Layout from './ui/Layout'
 
-// ========================================================
-// THE GRAND ARCHIVIST OF LOADING
-// ========================================================
-const LoadingScreen: React.FC<{ isGpuReady: boolean }> = ({ isGpuReady }) => {
-  const { progress, total } = useProgress()
-  const isCubeReady = useExperience((state) => state.isCubeReady)
+// Keep the semantic UI out of the Three.js dependency graph.
+const SceneLoader = lazy(() => import('./world/SceneLoader'))
 
-  const [didReachFailsafe, setDidReachFailsafe] = useState(false)
-  const [isHidden, setIsHidden] = useState(false)
-  const isDownloadingDone = total === 0 || Math.round(progress) >= 100
-  const isFullyLoaded = didReachFailsafe || (isGpuReady && isDownloadingDone && isCubeReady)
+class SceneBoundary extends React.Component<{ children: React.ReactNode; onFailure: () => void }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch(error: Error) {
+    console.warn('The 3D experience could not start. The portfolio remains available.', error.message)
+    this.props.onFailure()
+  }
+  render() { return this.state.failed ? null : this.props.children }
+}
+
+const App: React.FC = () => {
+  const isCubeReady = useExperience((state) => state.isCubeReady)
+  const isContentView = useExperience((state) => state.isContentView)
+  const [sceneFailed, setSceneFailed] = useState(false)
+  const toggleRef = useRef<HTMLDetailsElement | null>(null)
+  const handleSceneFailure = useCallback(() => setSceneFailed(true), [])
 
   useEffect(() => {
-    const failsafe = window.setTimeout(() => setDidReachFailsafe(true), 10000)
-    return () => clearTimeout(failsafe)
+    const mobile = window.matchMedia('(max-width: 767px)')
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncLayout = () => {
+      useExperience.getState().setMobileLayout(mobile.matches)
+      syncCameraToLayout()
+    }
+    const syncMotion = () => useExperience.getState().setReducedMotion(reduced.matches)
+    syncLayout()
+    syncMotion()
+    mobile.addEventListener('change', syncLayout)
+    reduced.addEventListener('change', syncMotion)
+    return () => {
+      mobile.removeEventListener('change', syncLayout)
+      reduced.removeEventListener('change', syncMotion)
+    }
   }, [])
 
   useEffect(() => {
-    if (!isFullyLoaded) return
-    const hideTimer = window.setTimeout(() => setIsHidden(true), 1000)
-    return () => clearTimeout(hideTimer)
-  }, [isFullyLoaded])
+    window.clearTimeout(Number(document.documentElement.dataset.startupTimer))
+    delete document.documentElement.dataset.startupTimer
+    const portfolio = document.querySelector<HTMLDetailsElement>('#portfolio-view')
+    const oracle = document.querySelector<HTMLButtonElement>('#portfolio-oracle')
+    if (!portfolio) return
+    toggleRef.current = portfolio
+    const blogLink = portfolio.querySelector<HTMLAnchorElement>('a[href="/blog/"]')
+    if (blogLink && window.location.search) blogLink.href = `/blog/${window.location.search}`
+    // Native details remains open and usable if JavaScript never starts.
+    portfolio.open = window.location.hash.startsWith('#portfolio-')
+    portfolio.toggleAttribute('data-fallback', portfolio.open)
+    const onToggle = () => useExperience.getState().setContentView(portfolio.open)
+    const onOracle = () => {
+      portfolio.open = false
+      onToggle()
+      jumpToPhase(3)
+    }
+    onToggle()
+    portfolio.addEventListener('toggle', onToggle)
+    oracle?.addEventListener('click', onOracle)
+    if (oracle) oracle.hidden = false
+    return () => {
+      portfolio.removeEventListener('toggle', onToggle)
+      oracle?.removeEventListener('click', onOracle)
+      if (oracle) oracle.hidden = true
+    }
+  }, [])
 
-  if (isHidden) return null
+  useEffect(() => {
+    if (!sceneFailed || !toggleRef.current) return
+    toggleRef.current.setAttribute('data-fallback', '')
+    toggleRef.current.open = true
+    useExperience.getState().setContentView(true)
+  }, [sceneFailed])
+
+  useEffect(() => {
+    if (isCubeReady || sceneFailed || isContentView) return
+    let timeout: number | undefined
+    const armDeadline = () => {
+      window.clearTimeout(timeout)
+      if (document.hidden) return
+      timeout = window.setTimeout(() => {
+        console.warn('3D startup timed out. Opening the portfolio text view.')
+        handleSceneFailure()
+      }, 20000)
+    }
+    armDeadline()
+    document.addEventListener('visibilitychange', armDeadline)
+    return () => {
+      window.clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', armDeadline)
+    }
+  }, [handleSceneFailure, isCubeReady, sceneFailed, isContentView])
 
   return (
-    <div 
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505] transition-opacity duration-1000 ease-in-out ${
-        isFullyLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
-      }`}
-    >
-      <div className="relative flex h-16 w-16 animate-[spin_4s_linear_infinite] items-center justify-center">
-          <div className="absolute inset-0 rotate-45 border border-red-500/40" />
-          <div className="absolute inset-0 border border-red-500/40" />
-          <div className="h-3 w-3 animate-pulse bg-red-600 shadow-[0_0_20px_rgba(220,38,38,1)]" />
-      </div>
-      <p className="mt-8 animate-pulse font-mono text-[10px] uppercase tracking-[0.4em] text-center text-red-500/80">
-        Initializing Architecture... {total === 0 ? 'Building' : `${Math.round(progress)}%`}
-      </p>
+    <div id="cinematic-content" inert={isContentView} aria-hidden={isContentView}>
+      {!isCubeReady && <div className="fallback-artifact" aria-hidden="true"><span /></div>}
+      {!sceneFailed && (
+        <SceneBoundary onFailure={handleSceneFailure}>
+          <Suspense fallback={null}><SceneLoader onFailure={handleSceneFailure} /></Suspense>
+        </SceneBoundary>
+      )}
+      <Layout />
+      {!isCubeReady && !sceneFailed && (
+        <p role="status" className="scene-loading">Preparing the 3D experience</p>
+      )}
     </div>
   )
 }
 
-const GPUDetector: React.FC<{ onReady: (isMobile: boolean, isWeak: boolean) => void }> = ({ onReady }) => {
-  const gpuTier = useDetectGPU()
-  
-  useEffect(() => {
-    if (!gpuTier) return
-
-    const isGpuMobile = gpuTier.isMobile === true
-    const isWeak = typeof gpuTier.tier === 'number' && gpuTier.tier <= 1
-    onReady(isGpuMobile, isWeak)
-  }, [gpuTier, onReady])
-
-  return null
-}
-
-const App: React.FC = () => {
-  const setHardwareProfile = useExperience((state) => state.setHardwareProfile)
-  const setMobileLayout = useExperience((state) => state.setMobileLayout)
-  const [isGpuReady, setIsGpuReady] = useState<boolean>(false)
-  const profileResolvedRef = useRef(false)
-
-  const handleGpuReady = useCallback(
-    (_isGpuMobile: boolean, isWeak: boolean) => {
-      if (profileResolvedRef.current) return
-      profileResolvedRef.current = true
-      setHardwareProfile(isWeak)
-      setIsGpuReady(true)
-    },
-    [setHardwareProfile],
-  )
-
-  useEffect(() => {
-    const mobileLayout = window.matchMedia('(max-width: 767px)')
-    const syncMobileLayout = () => {
-      const nextIsMobile = mobileLayout.matches
-      if (useExperience.getState().isMobile === nextIsMobile) return
-
-      setMobileLayout(nextIsMobile)
-      if (isGpuReady) syncCameraToLayout()
-    }
-
-    syncMobileLayout()
-    mobileLayout.addEventListener('change', syncMobileLayout)
-    return () => mobileLayout.removeEventListener('change', syncMobileLayout)
-  }, [isGpuReady, setMobileLayout])
-
-  useEffect(() => {
-    if (isGpuReady) return
-
-    const fallback = window.setTimeout(() => {
-      if (profileResolvedRef.current) return
-      profileResolvedRef.current = true
-      setHardwareProfile(true)
-      setIsGpuReady(true)
-    }, 10000)
-
-    return () => clearTimeout(fallback)
-  }, [isGpuReady, setHardwareProfile])
-
-  return (
-    <>
-      <Suspense fallback={null}>
-        <GPUDetector onReady={handleGpuReady} />
-      </Suspense>
-
-      <LoadingScreen isGpuReady={isGpuReady} />
-      
-      {isGpuReady && (
-        <>
-          <Experience />
-          <Layout />
-        </>
-      )}
-    </>
-  )
-}
-
 export default App
+
+

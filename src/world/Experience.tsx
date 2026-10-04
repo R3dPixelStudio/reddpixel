@@ -1,10 +1,11 @@
 import React, { Suspense, useEffect, useRef } from 'react'
 import { Canvas, useThree, useFrame } from '@react-three/fiber'
-import { useExperience } from '../stores/useExperience'
+import { useExperience, MODES } from '../stores/useExperience'
 import TimelineBridge from '../core/timeline/TimelineBridge'
 import GlassShell from './GlassShell'
 import InnerWorldEnvironment from './InnerWorldEnvironment'
 import GemAura from './GemAura'
+import { useCubeInteraction } from './useCubeInteraction'
 
 // ========================================================
 // THE SCENE COMPILER
@@ -45,12 +46,13 @@ const Scene: React.FC = () => {
   const isLowEnd = useExperience((state) => state.isLowEnd)
   const isCubeReady = useExperience((state) => state.isCubeReady)
   const useMobileLighting = isMobile || isLowEnd
+  useCubeInteraction()
 
   return (
     <>
       <TimelineBridge />
-      <ambientLight intensity={8.4} />
-      <directionalLight position={useMobileLighting ? [4, 6, 8] : [4, 6, 8]} intensity={5.5} />
+      <ambientLight intensity={useMobileLighting ? 3.8 : 8.4} />
+      <directionalLight position={[4, 6, 8]} intensity={useMobileLighting ? 3.8 : 5.5} />
       <GemAura />
       <GlassShell />
       <InnerWorldEnvironment />
@@ -59,18 +61,45 @@ const Scene: React.FC = () => {
   )
 }
 
-const Experience: React.FC = () => {
+const Experience: React.FC<{ onFailure: () => void }> = ({ onFailure }) => {
   const isMobile = useExperience((state) => state.isMobile)
   const isLowEnd = useExperience((state) => state.isLowEnd)
   const useConservativeCanvas = isMobile || isLowEnd
+  const isCubeReady = useExperience((state) => state.isCubeReady)
+  const phase = useExperience((state) => state.currentPhase)
+  const mode = useExperience((state) => state.mode)
+  const isMobilePanel = isMobile && phase > 0 && mode === MODES.EXPLORE
+  const isSceneSettling = useExperience((state) => state.isSceneSettling)
+  const isCubeInteracting = useExperience((state) => state.isCubeInteracting)
+  const isContentView = useExperience((state) => state.isContentView)
+  const isSceneObscured = useExperience((state) => state.isSceneObscured)
+  const isTransitioning = useExperience((state) => state.isTransitioning)
+  const [isVisible, setIsVisible] = React.useState(!document.hidden)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const syncVisibility = () => setIsVisible(!document.hidden)
+    document.addEventListener('visibilitychange', syncVisibility)
+    return () => document.removeEventListener('visibilitychange', syncVisibility)
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    canvas.addEventListener('webglcontextlost', onFailure)
+    return () => canvas.removeEventListener('webglcontextlost', onFailure)
+  }, [onFailure])
 
   return (
-    <div id="webgl-root" className="webgl-layer fixed inset-0 z-0">
+    <div id="webgl-root" aria-hidden="true" className="webgl-layer fixed inset-0 z-0">
       <Canvas
-        dpr={useConservativeCanvas ? 1 : [1, 1.5]}
+        ref={canvasRef}
+        fallback={<p>The 3D scene is unavailable. Open the portfolio text view to explore the work.</p>}
+        frameloop={isVisible && !isContentView && (!isCubeReady || isTransitioning || isSceneSettling || isCubeInteracting || (!isSceneObscured && (!isMobilePanel || phase === 2))) ? 'always' : 'never'}
+        dpr={isLowEnd ? 1 : isMobile ? [1, 1.25] : [1, 1.5]}
         style={{ touchAction: 'none' }}
         gl={{
-          antialias: !useConservativeCanvas,
+          antialias: !isLowEnd,
           alpha: true,
           powerPreference: 'high-performance',
         }}
@@ -86,3 +115,4 @@ const Experience: React.FC = () => {
 }
 
 export default Experience
+

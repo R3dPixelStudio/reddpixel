@@ -6,7 +6,9 @@ const CustomCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null)
   const isMobile = useExperience((state) => state.isMobile)
   const isLowEnd = useExperience((state) => state.isLowEnd)
-  const isCursorDisabled = isMobile || isLowEnd
+  const reducedMotion = useExperience((state) => state.reducedMotion)
+  const isContentView = useExperience((state) => state.isContentView)
+  const isCursorDisabled = isMobile || isLowEnd || reducedMotion || isContentView
 
   useEffect(() => {
     if (isCursorDisabled || !cursorRef.current) return

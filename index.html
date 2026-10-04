@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>reddpixel-last</title>
+    <script>
+      document.documentElement.classList.add('js');
+      document.documentElement.dataset.startupTimer = String(window.setTimeout(function () {
+        document.querySelector('#portfolio-view')?.setAttribute('data-fallback', '');
+      }, 20000));
+    </script>
+    <!-- portfolio-head -->
+    <link rel="stylesheet" href="/reddpixel-art.css" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- portfolio-content -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

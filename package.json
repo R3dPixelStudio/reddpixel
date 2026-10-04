@@ -7,7 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "npm run build && wrangler pages dev dist"
+    "check:seo": "node --experimental-strip-types scripts/verify-production.mjs",
+    "test:oracle": "node --experimental-strip-types scripts/check-oracle.ts",
+    "test:content": "node --experimental-strip-types scripts/check-content.ts",
+    "test:cube": "node --experimental-strip-types scripts/check-cube.ts",
+    "test:navigation": "node scripts/check-navigation.mjs",
+    "test:cms": "node scripts/check-cms.mjs",
+    "preview": "npm run build && wrangler pages dev dist",
+    "cms:password": "node scripts/cms-password.mjs",
+    "cms:migrate:local": "wrangler d1 migrations apply CMS_DB --local --config wrangler.jsonc",
+    "cms:preview": "npm run build && wrangler pages dev dist --ip 127.0.0.1 --port 8788"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -16,7 +25,6 @@
     "@tailwindcss/vite": "^4.3.1",
     "@types/three": "^0.184.1",
     "gsap": "^3.15.0",
-    "r3f-perf": "^7.2.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "three": "^0.184.0",
@@ -26,7 +34,7 @@
     "@cloudflare/vite-plugin": "^1.44.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.3.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
@@ -42,3 +50,4 @@
     "wrangler": "^4.110.0"
   }
 }
+

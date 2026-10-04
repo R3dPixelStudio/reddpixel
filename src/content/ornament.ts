@@ -1,0 +1,2 @@
+export const GIRIH_PATH = 'M50 3 61 24 82 18 76 39 97 50 76 61 82 82 61 76 50 97 39 76 18 82 24 61 3 50 24 39 18 18 39 24Z M50 15 85 50 50 85 15 50Z M25 25H75V75H25Z M3 50H97 M50 3V97'
+export const signatureMarkup = () => `<span class="signature-object" aria-hidden="true"><svg class="girih-orbit" viewBox="0 0 100 100"><path d="${GIRIH_PATH}"/></svg><span class="signature-space"><span class="signature-cube">${['front', 'back', 'right', 'left', 'top', 'bottom'].map(face => `<i class="cube-${face}"></i>`).join('')}</span></span></span>`
