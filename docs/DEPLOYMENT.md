@@ -33,6 +33,8 @@ Required CMS setup: a migrated D1 database bound as `CMS_DB`, an R2 bucket bound
 
 ## Before pushing code changes
 
+Cloudflare's current build uses Node `22.16.0` and npm `10.9.2`. Commit `package.json` and `package-lock.json` together after dependency changes. Verify `npm ci` in a separate clean checkout with the same versions: building with existing `node_modules` does not check lockfile completeness. If clean installation reports missing lockfile packages, regenerate the lockfile with `npm install --package-lock-only --include=optional` in that clean checkout and commit the result; keep Cloudflare's clean installation enabled.
+
 ```powershell
 npm run build
 npm run lint
