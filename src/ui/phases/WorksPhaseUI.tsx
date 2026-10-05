@@ -6,6 +6,7 @@ import { SHOWCASES, type MediaItem } from '../../content/portfolio'
 import { workCollections, type CmsWork } from '../../content/cms'
 import Signature from '../art/Signature'
 import MediaCarousel from '../work/MediaCarousel'
+import LineIcon from '../art/LineIcon'
 
 import { GIRIH_PATH } from '../../content/ornament'
 
@@ -108,7 +109,7 @@ export default function WorksPhaseUI() {
           <span className="branch-number" aria-hidden="true">0{index + 1} /</span>
           <span className="branch-art" aria-hidden="true"><BranchArt category={item.id} /></span>
           <span className="branch-copy"><strong>{item.title}</strong><span>{item.subtitle}</span></span>
-          <span className="branch-enter" aria-hidden="true">↗</span>
+          <span className="branch-enter" aria-hidden="true"><span>Explore</span><LineIcon name="arrow" /></span>
         </button>)}
       </div>
     </div>
@@ -119,7 +120,7 @@ export default function WorksPhaseUI() {
       <div className="website-collection">
         {category.projects.map((project) => <article key={project.subId} className="website-entry">
           <MediaCarousel label={`${project.name} gallery`} active={active} compact items={[...new Map((category.id === 'kinetic' && project.gallery.length ? project.gallery : [{ type: 'image', src: project.cover, alt: project.coverAlt }, ...project.gallery] as MediaItem[]).map(item => [item.src, item])).values()]} />
-          <div><h3>{project.name}</h3><p>{project.desc}</p>{project.link && <a href={project.link} target="_blank" rel="noopener noreferrer">{category.id === 'web' ? 'Explore website' : 'Explore project'} ↗</a>}</div>
+          <div className="project-copy"><h3>{project.name}</h3><p>{project.desc}</p>{project.link && <a className="action-link project-visit" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Visit ${project.name} ${category.id === 'web' ? 'website' : 'project'}. Opens in a new tab.`}><span>{category.id === 'web' ? 'Visit website' : 'Visit project'}</span><LineIcon name="arrow" /></a>}</div>
         </article>)}
       </div>
       </div>

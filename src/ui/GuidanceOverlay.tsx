@@ -7,8 +7,12 @@ export default function GuidanceOverlay() {
   const ready = useExperience(state => state.isCubeReady)
   const mobile = useExperience(state => state.isMobile)
   const contentView = useExperience(state => state.isContentView)
+  return phase === 0 && ready && !moving && !contentView ? <IntroCue mobile={mobile} /> : null
+}
+
+function IntroCue({ mobile }: { mobile: boolean }) {
   const [dismissed, setDismissed] = useState(false)
-  const active = phase === 0 && ready && !moving && !contentView && !dismissed
+  const active = !dismissed
 
   useEffect(() => {
     if (!active) return
@@ -44,7 +48,7 @@ export default function GuidanceOverlay() {
   }, [active])
 
   return <div className="cube-touch-prompt" data-active={active} aria-hidden="true">
-    <svg viewBox="0 0 40 40" fill="none"><path className="tap-rays" d="M11 7V3M7 11H3M8 8 5 5" /><path d="m12 12 5 23 5-7 8 5 3-5-8-5 8-4Z" /></svg>
+    <svg viewBox="0 0 40 40" fill="none"><path className="tap-rays" d="M10 14a7 7 0 0 1 14 0 M7 14a10 10 0 0 1 20 0" /><path d="M14 26V14a3 3 0 0 1 6 0v8l3-2 8 5v5c0 4-3 7-7 7h-5l-8-9a3 3 0 0 1 4-4l3 3" /></svg>
     <span>{mobile ? 'Tap to enter · Swipe to turn' : 'Click to enter'}</span>
   </div>
 }
