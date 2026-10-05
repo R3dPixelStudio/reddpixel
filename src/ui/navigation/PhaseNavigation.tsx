@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useExperience } from '../../stores/useExperience'
 import { destroyCinematicController, jumpToPhase, resumePendingPhase } from '../../core/timeline/cinematicController'
 
@@ -7,7 +7,6 @@ const PHASES = ['intro', 'about', 'work', 'contact']
 export default function PhaseNavigation() {
   const phase = useExperience((state) => state.currentPhase)
   const busy = useExperience((state) => state.isTransitioning)
-  const headingRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     let readingLocation = false
@@ -37,11 +36,15 @@ export default function PhaseNavigation() {
 
   useEffect(() => {
     if (busy || phase === 0 || useExperience.getState().isContentView) return
-    headingRef.current?.focus({ preventScroll: true })
+    const frame = requestAnimationFrame(() => {
+      const heading = document.querySelector<HTMLElement>('.phase-panel[data-active="true"] h2')
+      heading?.setAttribute('tabindex', '-1')
+      heading?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
   }, [busy, phase])
 
-  return <nav className="phase-navigation" aria-label="Portfolio phases">
-    <p ref={headingRef} tabIndex={-1} aria-live="polite">{String(phase).padStart(2, '0')} / {PHASES[phase].toUpperCase()}</p>
+  return <nav className="phase-navigation" hidden={phase !== 0 || busy} aria-label="Portfolio phases">
     <div>{PHASES.map((name, index) => <a key={name} href={`#${name}`} aria-current={phase === index ? 'location' : undefined}
       onClick={(event) => {
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return

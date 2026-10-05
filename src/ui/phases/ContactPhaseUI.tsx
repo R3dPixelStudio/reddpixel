@@ -5,10 +5,11 @@ import { useExperience, MODES } from '../../stores/useExperience'
 
 import { CONTACT_LINKS, PROFILE } from '../../content/portfolio'
 import Signature from '../art/Signature'
+import LineIcon from '../art/LineIcon'
 
 function DirectLinks() {
   return <div className="direct-contact-links">
-    {CONTACT_LINKS.map(link => <a key={link.label} href={link.href} target={link.external ? '_blank' : undefined} rel={link.external ? 'noopener noreferrer' : undefined} aria-label={link.ariaLabel}><strong>{link.label === 'EMAIL' ? 'Email / Start a project' : link.label.charAt(0) + link.label.slice(1).toLowerCase()}</strong><span>{link.detail}</span><i aria-hidden="true">↗</i></a>)}
+    {CONTACT_LINKS.map(link => <a key={link.label} href={link.href} target={link.external ? '_blank' : undefined} rel={link.external ? 'noopener noreferrer' : undefined} aria-label={link.ariaLabel}><LineIcon name={link.label === 'EMAIL' ? 'email' : link.label === 'LINKEDIN' ? 'linkedin' : link.label === 'INSTAGRAM' ? 'instagram' : link.label === 'YOUTUBE' ? 'youtube' : 'telegram'} /><strong>{link.label.charAt(0) + link.label.slice(1).toLowerCase()}</strong><span>{link.detail}</span><i aria-hidden="true"><LineIcon name="arrow" /></i></a>)}
     {!PROFILE.youtube && <p className="social-pending">YouTube · Coming later</p>}
   </div>
 }
@@ -144,7 +145,6 @@ const ContactPhaseUI: React.FC = () => {
   const currentPhase = useExperience((state) => state.currentPhase)
   const mode = useExperience((state) => state.mode)
   const reducedMotion = useExperience((state) => state.reducedMotion)
-  const mobile = useExperience((state) => state.isMobile)
   const isExplore = mode === MODES.EXPLORE && currentPhase === 3
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -346,7 +346,7 @@ const ContactPhaseUI: React.FC = () => {
   }
 
   return <section ref={containerRef} data-active={isExplore} aria-label="Chat and contact" aria-hidden={!isExplore} inert={!isExplore} className="oracle-contact-shell phase-panel invisible">
-    {mobile ? <details className="contact-direct direct-contact-mobile"><summary><span aria-hidden="true">✦</span> Connect with Arash <span className="direct-toggle" aria-hidden="true">+</span></summary><DirectLinks /></details> : <aside className="contact-direct direct-contact-desktop"><Signature /><p className="eyebrow">DIRECT / HUMAN</p><h2>Make contact.</h2><p className="direct-intro">A project, a collaboration, a hello.</p><DirectLinks /></aside>}
+    <aside className="contact-direct"><div className="direct-heading"><Signature /><div><p className="eyebrow">DIRECT / HUMAN</p><h2>Connect with Arash.</h2></div></div><DirectLinks /></aside>
     <div className="oracle-minimal-card">
       <header className="oracle-header"><div><p className="eyebrow">REDDPIXEL / AI GUIDE</p><h2>The Oracle<span aria-hidden="true"> ✦</span></h2><p>Talk ideas. Ask about the work.</p></div></header>
       <div className="oracle-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={isTyping}>
