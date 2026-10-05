@@ -4,6 +4,5 @@
   // Local bindings only. Live Pages settings remain managed in the Cloudflare dashboard.
   // Add pages_build_output_dir only after downloading and reviewing the live configuration.
   "compatibility_date": "2026-09-25",
-  "d1_databases": [{ "binding": "CMS_DB", "database_name": "reddpixel-cms", "database_id": "local-reddpixel-cms", "migrations_dir": "migrations" }],
-  "r2_buckets": [{ "binding": "CMS_MEDIA", "bucket_name": "reddpixel-media" }]
+  "d1_databases": [{ "binding": "CMS_DB", "database_name": "reddpixel-cms", "database_id": "local-reddpixel-cms", "migrations_dir": "migrations" }]
 }

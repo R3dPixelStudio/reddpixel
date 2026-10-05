@@ -13,6 +13,7 @@
     "test:cube": "node --experimental-strip-types scripts/check-cube.ts",
     "test:navigation": "node scripts/check-navigation.mjs",
     "test:cms": "node scripts/check-cms.mjs",
+    "test:security": "node --experimental-strip-types scripts/check-security-media.mjs",
     "preview": "npm run build && wrangler pages dev dist",
     "cms:password": "node scripts/cms-password.mjs",
     "cms:migrate:local": "wrangler d1 migrations apply CMS_DB --local --config wrangler.jsonc",

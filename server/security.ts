@@ -24,19 +24,24 @@ export async function passwordMatches(password: string, encoded: string) {
 export async function session(request: Request, env: CmsEnv) {
   const token = request.headers.get('Cookie')?.match(/(?:^|;\s*)reddpixel_admin=([a-f0-9]{64})(?:;|$)/)?.[1]
   if (!token || !env.CMS_DB || !env.ADMIN_PASSWORD_HASH) return null
-  return env.CMS_DB.prepare('SELECT csrf FROM sessions WHERE token_hash = ? AND expires > ?').bind(await digest(token), Date.now()).first<{ csrf: string }>()
+  return env.CMS_DB.prepare('SELECT csrf FROM sessions WHERE token_hash = ? AND expires > ?').bind(await sessionDigest(token, env.ADMIN_PASSWORD_HASH), Date.now()).first<{ csrf: string }>()
 }
+export const sessionDigest = (token: string, passwordHash: string) => digest(`${token}:${passwordHash}`)
 export function cookie(request: Request, token: string, expires = 28800) {
   const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : ''
   return `reddpixel_admin=${token}; Path=/api/cms; HttpOnly; SameSite=Strict; Max-Age=${expires}${secure}`
 }
-export async function allowed(db: Database, key: string, maximum: number, windowMs: number) {
+export async function rateLimit(db: Database, key: string, maximum: number, windowMs: number) {
   const now = Date.now()
-  await db.prepare('DELETE FROM throttle WHERE reset < ?').bind(now).run()
-  await db.prepare('INSERT INTO throttle (key,count,reset) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count = count + 1').bind(key, now + windowMs).run()
-  const row = await db.prepare('SELECT count FROM throttle WHERE key = ?').bind(key).first<{ count: number }>()
-  return !!row && row.count <= maximum
+  const row = await db.prepare(`INSERT INTO throttle (key,count,reset) VALUES (?,1,?)
+    ON CONFLICT(key) DO UPDATE SET
+      count = CASE WHEN throttle.reset <= ? THEN 1 ELSE MIN(throttle.count + 1, ?) END,
+      reset = CASE WHEN throttle.reset <= ? THEN excluded.reset ELSE throttle.reset END
+    RETURNING count, reset`).bind(key, now + windowMs, now, maximum + 1, now).first<{ count: number; reset: number }>()
+  if (row?.count === 1) await db.prepare('DELETE FROM throttle WHERE key IN (SELECT key FROM throttle WHERE reset <= ? LIMIT 100)').bind(now).run()
+  return { allowed: !!row && row.count <= maximum, retryAfter: Math.max(1, Math.ceil(((row?.reset ?? now + windowMs) - now) / 1000)) }
 }
+export async function allowed(db: Database, key: string, maximum: number, windowMs: number) { return (await rateLimit(db, key, maximum, windowMs)).allowed }
 export async function readJson(request: Request, maximum = 150000): Promise<unknown> {
   if (!(request.headers.get('Content-Type') ?? '').startsWith('application/json')) throw new Error('Send JSON content.')
   const declared = Number(request.headers.get('Content-Length'))

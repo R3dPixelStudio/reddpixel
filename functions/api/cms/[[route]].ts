@@ -1,9 +1,8 @@
 import { renderJournalPost } from '../../../scripts/journalHtml'
 import { validPost, validWork, type CmsPost, type CmsWork, type CmsComment, type CmsMedia } from '../../../src/content/cms'
 import { posts, works, type CmsContext } from '../../../server/store'
-import { allowed, cookie, digest, json, passwordMatches, randomToken, readJson, sameOrigin, session } from '../../../server/security'
-
-declare const FixedLengthStream: new (length: number) => { readable: ReadableStream<Uint8Array>; writable: WritableStream<Uint8Array> }
+import { allowed, cookie, digest, json, passwordMatches, randomToken, rateLimit, readJson, sameOrigin, session, sessionDigest } from '../../../server/security'
+import { IMAGE_UPLOAD_BYTES, VIDEO_UPLOAD_BYTES, MEDIA_CHUNK_BYTES, MEDIA_EXTENSIONS, ensureMediaStorage, mediaStorage, removeMediaObject, reserveMedia, storeMedia, validMediaHeader } from '../../../server/media'
 
 export async function onRequest(context: CmsContext): Promise<Response> {
   const { request, env } = context
@@ -14,17 +13,20 @@ export async function onRequest(context: CmsContext): Promise<Response> {
   try {
     const auth = await session(request, env)
     if (route === 'session') {
-      if (request.method === 'GET') return json({ authenticated: !!auth, csrf: auth?.csrf ?? null, uploads: !!env.CMS_MEDIA })
+      if (request.method === 'GET') return json({ authenticated: !!auth, csrf: auth?.csrf ?? null, uploads: true })
       if (!sameOrigin(request)) return json({ error: 'Request origin is not allowed.' }, 403)
       if (request.method === 'POST') {
         const ip = request.headers.get('CF-Connecting-IP') ?? 'local'
-        if (!await allowed(db, await digest(`login:${ip}:${env.ADMIN_PASSWORD_HASH}`), 5, 15 * 60000)) return json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429)
+        const clientLimit = await rateLimit(db, await digest(`login:${ip}:${env.ADMIN_PASSWORD_HASH}`), 5, 15 * 60000)
+        if (!clientLimit.allowed) return json({ error: 'Too many login attempts. Please wait before trying again.', code: 'LOGIN_THROTTLED', retryAfter: clientLimit.retryAfter }, 429, { 'Retry-After': String(clientLimit.retryAfter) })
+        const siteLimit = await rateLimit(db, await digest(`login-global:${env.ADMIN_PASSWORD_HASH}`), 30, 60000)
+        if (!siteLimit.allowed) return json({ error: 'Sign-in is temporarily busy. Please try again shortly.', code: 'LOGIN_THROTTLED', retryAfter: siteLimit.retryAfter }, 429, { 'Retry-After': String(siteLimit.retryAfter) })
         const body = await readJson(request, 2048) as { password?: unknown }
         if (typeof body.password !== 'string' || body.password.length < 16 || body.password.length > 256 || !await passwordMatches(body.password, env.ADMIN_PASSWORD_HASH)) return json({ error: 'The password does not match.' }, 401)
         const token = randomToken(), csrf = randomToken()
         await db.prepare('DELETE FROM sessions WHERE expires < ?').bind(Date.now()).run()
-        await db.prepare('INSERT INTO sessions (token_hash,csrf,expires) VALUES (?,?,?)').bind(await digest(token), csrf, Date.now() + 8 * 3600000).run()
-        return json({ authenticated: true, csrf, uploads: !!env.CMS_MEDIA }, 200, { 'Set-Cookie': cookie(request, token) })
+        await db.prepare('INSERT INTO sessions (token_hash,csrf,expires) VALUES (?,?,?)').bind(await sessionDigest(token, env.ADMIN_PASSWORD_HASH), csrf, Date.now() + 8 * 3600000).run()
+        return json({ authenticated: true, csrf, uploads: true }, 200, { 'Set-Cookie': cookie(request, token) })
       }
       if (request.method === 'DELETE' && auth && request.headers.get('X-CSRF-Token') === auth.csrf) {
         await db.prepare('DELETE FROM sessions WHERE csrf = ?').bind(auth.csrf).run()
@@ -54,7 +56,10 @@ export async function onRequest(context: CmsContext): Promise<Response> {
       if (route === 'posts') return json({ items: await posts(env, true) })
       if (route === 'works') return json({ items: await works(env, true) })
       if (route === 'comments') return json({ items: (await db.prepare("SELECT id,slug,name,text,status,reply,created_at AS createdAt FROM comments ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END, created_at DESC LIMIT 500").all<CmsComment>()).results })
-      if (route === 'media') return json({ items: (await db.prepare('SELECT key,src,type,name,bytes FROM media ORDER BY created_at DESC LIMIT 500').all<CmsMedia>()).results })
+      if (route === 'media') {
+        const storage = await mediaStorage(db)
+        return json({ items: (await db.prepare('SELECT key,src,type,name,bytes FROM media WHERE NOT EXISTS (SELECT 1 FROM media_objects WHERE media_objects.key=media.key AND complete=0) ORDER BY created_at DESC LIMIT 500').all<CmsMedia>()).results, storage })
+      }
     }
     if (request.method === 'PUT' && (route === 'posts' || route === 'works')) {
       const value = await readJson(request)
@@ -77,15 +82,57 @@ export async function onRequest(context: CmsContext): Promise<Response> {
       const result = await db.prepare('UPDATE comments SET status=?,reply=? WHERE id=?').bind(body.status, body.reply.trim(), body.id).run()
       return result.meta.changes ? json({ saved: true }) : json({ error: 'Comment not found.' }, 404)
     }
+    if (request.method === 'POST' && route === 'media/start') {
+      if (!await allowed(db, await digest(`upload:${auth.csrf}`), 60, 10 * 60000)) return json({ error: 'Please wait before uploading more files.' }, 429, { 'Retry-After': '600' })
+      const value = await readJson(request, 1024) as { mime?: unknown; name?: unknown; bytes?: unknown }
+      if (typeof value.mime !== 'string' || !MEDIA_EXTENSIONS[value.mime] || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 180 || Array.from(value.name).some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127) || typeof value.bytes !== 'number' || !Number.isSafeInteger(value.bytes) || value.bytes < 16 || value.bytes > (value.mime.startsWith('video/') ? VIDEO_UPLOAD_BYTES : IMAGE_UPLOAD_BYTES)) return json({ error: 'Choose a JPEG/PNG/WebP image up to 8 MB, or an MP4/WebM video up to 20 MB with a valid filename.' }, 400)
+      const key = `${crypto.randomUUID()}.${MEDIA_EXTENSIONS[value.mime]}`
+      if (!await reserveMedia(db, key, value.mime, value.bytes)) return json({ error: 'The media library is full (300 MB). Compress files or use repository images.', code: 'MEDIA_STORAGE_FULL' }, 507)
+      const item: CmsMedia = { key, src: `/media/${key}`, type: value.mime.startsWith('video/') ? 'video' : 'image', name: value.name.trim(), bytes: value.bytes }
+      try { await db.prepare('INSERT INTO media (key,src,type,name,bytes,created_at) VALUES (?,?,?,?,?,?)').bind(key, item.src, item.type, item.name, item.bytes, new Date().toISOString()).run() } catch (error) { await removeMediaObject(db, key); throw error }
+      return json({ item, chunkBytes: MEDIA_CHUNK_BYTES }, 201)
+    }
+    if (['media/chunk', 'media/finish', 'media/cancel'].includes(route)) {
+      const key = new URL(request.url).searchParams.get('key') ?? ''
+      if (!/^[a-f0-9-]{36}\.(?:jpg|png|webp|mp4|webm)$/.test(key)) return json({ error: 'Invalid upload.' }, 400)
+      await ensureMediaStorage(db)
+      const object = await db.prepare('SELECT bytes,mime,complete,created_at FROM media_objects WHERE key=?').bind(key).first<{ bytes: number; mime: string; complete: number; created_at: number }>()
+      if (!object || object.complete || object.created_at < Date.now() - 3600000) return json({ error: 'This upload is closed or expired. Start again.' }, 409)
+      if (route === 'media/cancel' && request.method === 'DELETE') {
+        await removeMediaObject(db, key); await db.prepare('DELETE FROM media WHERE key=?').bind(key).run(); return json({ cancelled: true })
+      }
+      if (route === 'media/chunk' && request.method === 'PUT') {
+        if (!await allowed(db, await digest(`upload-chunks:${auth.csrf}`), 5000, 10 * 60000)) return json({ error: 'Please wait before uploading more data.' }, 429)
+        const positionText = new URL(request.url).searchParams.get('position') ?? ''
+        const position = Number(positionText), expected = Math.min(MEDIA_CHUNK_BYTES, object.bytes - position * MEDIA_CHUNK_BYTES)
+        if (!/^\d+$/.test(positionText) || !Number.isSafeInteger(position) || expected <= 0 || Number(request.headers.get('Content-Length')) !== expected || request.headers.get('Content-Type') !== object.mime || !request.body) return json({ error: 'Invalid upload chunk.' }, 400)
+        const reader = request.body.getReader(), buffer = new Uint8Array(expected); let filled = 0
+        while (true) { const next = await reader.read(); if (next.done) break; if (filled + next.value.length > expected) { await reader.cancel(); return json({ error: 'Chunk is too large.' }, 413) }; buffer.set(next.value, filled); filled += next.value.length }
+        if (filled !== expected || position === 0 && !validMediaHeader(buffer.subarray(0, 32), object.mime)) return json({ error: 'The file contents or size do not match the selected media type.' }, 400)
+        const result = await db.prepare('INSERT INTO media_chunks (key,position,data) VALUES (?,?,?) ON CONFLICT(key,position) DO NOTHING').bind(key, position, buffer.buffer).run()
+        return result.meta.changes ? json({ uploaded: true }) : json({ error: 'This chunk was already uploaded.' }, 409)
+      }
+      if (route === 'media/finish' && request.method === 'POST') {
+        const total = await db.prepare('SELECT COUNT(*) AS count,COALESCE(SUM(length(data)),0) AS bytes FROM media_chunks WHERE key=?').bind(key).first<{ count: number; bytes: number }>()
+        if (!total || total.bytes !== object.bytes || total.count !== Math.ceil(object.bytes / MEDIA_CHUNK_BYTES)) return json({ error: 'The upload is incomplete. Please try again.' }, 409)
+        await db.prepare('UPDATE media_objects SET complete=1 WHERE key=? AND complete=0').bind(key).run()
+        const item = await db.prepare('SELECT key,src,type,name,bytes FROM media WHERE key=?').bind(key).first<CmsMedia>()
+        return json({ item }, 201)
+      }
+      return json({ error: 'Unsupported upload action.' }, 405)
+    }
     if (request.method === 'POST' && route === 'media') {
-      if (!env.CMS_MEDIA) return json({ error: 'Bind CMS_MEDIA to enable uploads.' }, 503)
+      if (!await allowed(db, await digest(`upload:${auth.csrf}`), 60, 10 * 60000)) return json({ error: 'Please wait before uploading more files.' }, 429, { 'Retry-After': '600' })
       const mime = request.headers.get('Content-Type') ?? ''
-      const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/webm': 'webm' }
+      const extensions = MEDIA_EXTENSIONS
       if (!extensions[mime] || !request.body) return json({ error: 'Upload a JPEG, PNG, WebP, MP4 or WebM file.' }, 400)
-      const maximum = mime.startsWith('video/') ? 40 * 1024 * 1024 : 8 * 1024 * 1024
+      const maximum = MEDIA_CHUNK_BYTES
       const declaredSize = Number(request.headers.get('Content-Length'))
       if (!Number.isSafeInteger(declaredSize) || declaredSize < 16) return json({ error: 'Upload a file with a known size of at least 16 bytes.' }, 411)
-      if (declaredSize > maximum) return json({ error: 'Images may be up to 8 MB; videos up to 40 MB.' }, 413)
+      if (declaredSize > maximum) return json({ error: 'Use the studio chunked uploader for files larger than 256 KB.' }, 413)
+      let name: string
+      try { name = decodeURIComponent(request.headers.get('X-File-Name') ?? 'Media').trim() } catch { return json({ error: 'The filename is not valid.' }, 400) }
+      if (!name || name.length > 180 || Array.from(name).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return json({ error: 'Use a filename of 1–180 characters without control characters.' }, 400)
       const reader = request.body.getReader()
       const prefix: Uint8Array[] = []; let bytes = 0
       while (bytes < 16) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.length; prefix.push(chunk.value) }
@@ -100,11 +147,13 @@ export async function onRequest(context: CmsContext): Promise<Response> {
         async pull(controller) { const chunk = await reader.read(); if (chunk.done) { controller.close(); return }; bytes += chunk.value.length; if (bytes > maximum) { await reader.cancel(); controller.error(new Error('Upload exceeds the size limit.')); return }; controller.enqueue(chunk.value) },
         cancel() { return reader.cancel() },
       })
-      const fixed = new FixedLengthStream(declaredSize), uploadController = new AbortController()
-      const pumping = stream.pipeTo(fixed.writable, { signal: uploadController.signal })
-      try { await Promise.all([pumping, env.CMS_MEDIA.put(key, fixed.readable, { httpMetadata: { contentType: mime } })]) } catch { uploadController.abort(); await pumping.catch(() => {}); return json({ error: 'Upload failed or exceeded the size limit.' }, 413) }
-      const item: CmsMedia = { key, src: `/media/${key}`, type: mime.startsWith('video/') ? 'video' : 'image', name: decodeURIComponent(request.headers.get('X-File-Name') ?? 'Media').slice(0, 180), bytes }
-      try { await db.prepare('INSERT INTO media (key,src,type,name,bytes,created_at) VALUES (?,?,?,?,?,?)').bind(item.key, item.src, item.type, item.name, bytes, new Date().toISOString()).run() } catch (error) { await env.CMS_MEDIA.delete(key); throw error }
+      try { await storeMedia(db, key, mime, declaredSize, stream) } catch (error) {
+        if (error instanceof Error && error.message === 'MEDIA_STORAGE_FULL') return json({ error: 'The media library is full (300 MB). Use compressed files or repository images.', code: 'MEDIA_STORAGE_FULL' }, 507)
+        if (error instanceof Error && error.message === 'MEDIA_SIZE_MISMATCH') return json({ error: 'Upload did not match its declared size. Try again.' }, 400)
+        throw error
+      }
+      const item: CmsMedia = { key, src: `/media/${key}`, type: mime.startsWith('video/') ? 'video' : 'image', name, bytes }
+      try { await db.prepare('INSERT INTO media (key,src,type,name,bytes,created_at) VALUES (?,?,?,?,?,?)').bind(item.key, item.src, item.type, item.name, bytes, new Date().toISOString()).run() } catch (error) { await removeMediaObject(db, key); throw error }
       return json({ item }, 201)
     }
     return json({ error: 'Content action not found.' }, 404)
