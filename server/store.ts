@@ -6,7 +6,7 @@ export interface Database { prepare(sql: string): Statement }
 export interface ObjectBody { body: ReadableStream<Uint8Array>; size: number; httpEtag: string; httpMetadata?: { contentType?: string }; range?: { offset: number; length: number } }
 export interface Bucket { put(key: string, body: ReadableStream<Uint8Array>, options: { httpMetadata: { contentType: string } }): Promise<unknown>; get(key: string, options?: { range: { offset: number; length?: number } }): Promise<ObjectBody | null>; head(key: string): Promise<Omit<ObjectBody, 'body'> | null>; delete(key: string): Promise<void> }
 export interface CmsEnv { CMS_DB?: Database; CMS_MEDIA?: Bucket; ADMIN_PASSWORD_HASH?: string; ALLOWED_ORIGIN?: string }
-export interface CmsContext { request: Request; env: CmsEnv; next(request?: Request): Promise<Response> }
+export interface CmsContext { request: Request; env: CmsEnv; next(request?: Request): Promise<Response>; waitUntil?(promise: Promise<unknown>): void }
 
 export async function posts(env: CmsEnv, admin = false): Promise<CmsPost[]> {
   const merged = new Map<string, CmsPost>(JOURNAL_POSTS.map(p => [p.slug, { ...p, status: 'published', version: 0 }]))

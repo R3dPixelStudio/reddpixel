@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { createPortal } from 'react-dom'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import type { MediaItem } from '../../content/portfolio'
 import { IMAGE_SIZES, thumbnail } from '../../content/imageSizes'
 import { useExperience } from '../../stores/useExperience'
+import LineIcon from '../art/LineIcon'
 
-type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean }
+type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean; expandable?: boolean; initialIndex?: number }
 
-export default function MediaCarousel({ items, label, active, compact = false }: Props) {
+export default function MediaCarousel({ items, label, active, compact = false, expandable = true, initialIndex = 0 }: Props) {
   const track = useRef<HTMLDivElement>(null)
   const frame = useRef<number | null>(null)
   const drag = useRef<{ id: number; x: number; left: number; start: number; moved: boolean } | null>(null)
-  const [index, setIndex] = useState(0)
+  const suppressClick = useRef(false)
+  const [index, setIndex] = useState(initialIndex)
+  const [expanded, setExpanded] = useState<{ index: number; trigger: HTMLButtonElement } | null>(null)
   const hasItems = items.length > 0
   const currentIndex = Math.min(index, Math.max(0, items.length - 1))
   const reducedMotion = useExperience(state => state.reducedMotion)
@@ -48,9 +54,9 @@ export default function MediaCarousel({ items, label, active, compact = false }:
     if (gesture.moved) goTo(target)
   }
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('video,button,a')) return
+    suppressClick.current = false
+    if (event.pointerType !== 'mouse' || event.button !== 0 || (event.target as Element).closest('video,button:not(.carousel-open),a')) return
     drag.current = { id: event.pointerId, x: event.clientX, left: event.currentTarget.scrollLeft, start: nearest(), moved: false }
-    event.currentTarget.setPointerCapture(event.pointerId)
   }
   const pointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const gesture = drag.current
@@ -58,6 +64,8 @@ export default function MediaCarousel({ items, label, active, compact = false }:
     const distance = event.clientX - gesture.x
     if (Math.abs(distance) < 5 && !gesture.moved) return
     gesture.moved = true
+    suppressClick.current = true
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId)
     event.currentTarget.setAttribute('data-dragging', 'true')
     event.currentTarget.scrollLeft = gesture.left - distance
     event.preventDefault()
@@ -73,9 +81,9 @@ export default function MediaCarousel({ items, label, active, compact = false }:
     if (!element) return
     element.querySelectorAll('video').forEach((video, i) => {
       const slide = video.closest<HTMLElement>('[data-slide]')
-      if (!active || Number(slide?.dataset.slide ?? i) !== currentIndex) video.pause()
+      if (!active || expanded || Number(slide?.dataset.slide ?? i) !== currentIndex) video.pause()
     })
-  }, [currentIndex, active, items.length])
+  }, [currentIndex, active, items.length, expanded])
   useEffect(() => {
     const element = track.current
     if (!element) return
@@ -106,7 +114,7 @@ export default function MediaCarousel({ items, label, active, compact = false }:
       {items.map((item, i) => <figure className="carousel-slide" key={item.src} data-slide={i} data-current={i === currentIndex} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${items.length}`}>
         <div className="carousel-media">{item.type === 'video'
           ? <video src={item.src} controls playsInline preload={active && currentIndex === i ? 'metadata' : 'none'} aria-label={item.alt} tabIndex={active && currentIndex === i ? 0 : -1} />
-          : <img src={item.src} srcSet={thumbnail(item.src) !== item.src ? `${thumbnail(item.src)} 640w, ${item.src} 1200w` : undefined} sizes={compact ? '(min-width:768px) 45vw, 90vw' : '(min-width:768px) 1000px, 90vw'} width={IMAGE_SIZES[item.src]?.width} height={IMAGE_SIZES[item.src]?.height} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" draggable={false} alt={item.alt} />}</div>
+          : <>{expandable && <button type="button" className="carousel-open" tabIndex={active && currentIndex === i ? 0 : -1} aria-label={`Expand image ${i + 1} in ${label}`} onClick={event => { if (event.detail > 0 && suppressClick.current) return; if (active) setExpanded({ index: i, trigger: event.currentTarget }) }}><span className="carousel-expand-mark"><LineIcon name="expand" /></span></button>}<img src={item.src} srcSet={thumbnail(item.src) !== item.src ? `${thumbnail(item.src)} 640w, ${item.src} 1200w` : undefined} sizes={compact ? '(min-width:768px) 45vw, 90vw' : '100vw'} width={IMAGE_SIZES[item.src]?.width} height={IMAGE_SIZES[item.src]?.height} loading={i === currentIndex ? 'eager' : 'lazy'} decoding="async" draggable={false} alt={item.alt} /></>}</div>
         <figcaption>{item.alt}</figcaption>
       </figure>)}
     </div>
@@ -116,5 +124,37 @@ export default function MediaCarousel({ items, label, active, compact = false }:
       {items.length > 1 && <div className="carousel-arrows"><button type="button" aria-label={`Previous image in ${label}`} disabled={currentIndex === 0} onClick={() => goTo(currentIndex - 1)}>←</button><button type="button" aria-label={`Next image in ${label}`} disabled={currentIndex === items.length - 1} onClick={() => goTo(currentIndex + 1)}>→</button></div>}
     </div>
     {items.length > 1 && <p className="carousel-instruction">Swipe or drag to explore</p>}
+    {expanded && active && expandable && createPortal(<FullscreenGallery items={items} label={label} initialIndex={expanded.index} trigger={expanded.trigger} close={() => setExpanded(null)} />, document.body)}
   </section>
+}
+
+function FullscreenGallery({ items, label, initialIndex, trigger, close }: { items: MediaItem[]; label: string; initialIndex: number; trigger: HTMLButtonElement; close: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const animation = useRef<gsap.core.Timeline | null>(null)
+  const closing = useRef(false)
+  const reducedMotion = useExperience(state => state.reducedMotion)
+  useGSAP(() => {
+    const element = dialog.current!
+    element.showModal()
+    animation.current = gsap.timeline({ onReverseComplete: close })
+      .fromTo(element, { opacity: 0 }, { opacity: 1, duration: reducedMotion ? .01 : .28, ease: 'power2.out' })
+      .fromTo('.fullscreen-gallery-body', { y: 14, scale: .97 }, { y: 0, scale: 1, duration: reducedMotion ? .01 : .28, ease: 'power2.out' }, 0)
+    return () => {
+      animation.current?.kill()
+      element.querySelectorAll('video').forEach(video => video.pause())
+      if (element.open) element.close()
+      if (trigger.isConnected && !trigger.closest('[inert]')) trigger.focus({ preventScroll: true })
+    }
+  }, { scope: dialog })
+  const dismiss = () => {
+    if (closing.current) return
+    closing.current = true
+    const tween = animation.current
+    if (reducedMotion || !tween || tween.progress() === 0) close()
+    else tween.timeScale(1.3).reverse()
+  }
+  return <dialog ref={dialog} className="fullscreen-gallery" aria-label={`${label} full screen`} onCancel={event => { event.preventDefault(); dismiss() }} onKeyDown={event => { if (event.key === 'Escape') event.stopPropagation() }}>
+    <header className="fullscreen-gallery-header"><div><p className="eyebrow">REDDPIXEL / GALLERY</p><h2>{label}</h2></div><button type="button" aria-label="Close full-screen gallery" onClick={dismiss}><LineIcon name="close" /></button></header>
+    <div className="fullscreen-gallery-body"><MediaCarousel items={items} label={label} active expandable={false} initialIndex={initialIndex} /></div>
+  </dialog>
 }

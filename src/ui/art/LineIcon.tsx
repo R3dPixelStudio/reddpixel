@@ -1,6 +1,8 @@
-type IconName = 'arrow' | 'email' | 'instagram' | 'linkedin' | 'telegram' | 'youtube' | 'education' | 'certificate' | 'toolkit' | 'experience' | 'language'
+type IconName = 'arrow' | 'email' | 'instagram' | 'linkedin' | 'telegram' | 'youtube' | 'education' | 'certificate' | 'toolkit' | 'experience' | 'language' | 'expand' | 'close'
 
 const paths: Record<IconName, string> = {
+  expand: 'M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5',
+  close: 'm6 6 12 12 M18 6 6 18',
   arrow: 'M6 18 18 6 M6 6h12v12',
   email: 'M3 5h18v14H3Z M3 6l9 7 9-7',
   instagram: 'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M17 7h.01',
