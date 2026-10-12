@@ -5,6 +5,8 @@ import TimelineBridge from '../core/timeline/TimelineBridge'
 import GlassShell from './GlassShell'
 import InnerWorldEnvironment from './InnerWorldEnvironment'
 import GemAura from './GemAura'
+import IntroStage from './IntroStage'
+import CubeLighting from './CubeLighting'
 import { useCubeInteraction } from './useCubeInteraction'
 
 // ========================================================
@@ -42,18 +44,17 @@ const SceneCompiler: React.FC = () => {
 }
 
 const Scene: React.FC = () => {
-  const isMobile = useExperience((state) => state.isMobile)
-  const isLowEnd = useExperience((state) => state.isLowEnd)
   const isCubeReady = useExperience((state) => state.isCubeReady)
-  const useMobileLighting = isMobile || isLowEnd
+
   useCubeInteraction()
 
   return (
     <>
       <TimelineBridge />
-      <ambientLight intensity={useMobileLighting ? 3.8 : 8.4} />
-      <directionalLight position={[4, 6, 8]} intensity={useMobileLighting ? 3.8 : 5.5} />
+      <CubeLighting />
+
       <GemAura />
+      <IntroStage />
       <GlassShell />
       <InnerWorldEnvironment />
       {!isCubeReady && <SceneCompiler />}
@@ -103,7 +104,7 @@ const Experience: React.FC<{ onFailure: () => void }> = ({ onFailure }) => {
           alpha: true,
           powerPreference: 'high-performance',
         }}
-        camera={{ fov: 45, near: 0.01, far: 500, position: [0, 0, 12] }}
+        camera={{ fov: 38, near: 0.01, far: 500, position: [0, 1.15, 5.7] }}
         shadows={!useConservativeCanvas}
       >
         <Suspense fallback={null}>
@@ -115,4 +116,3 @@ const Experience: React.FC<{ onFailure: () => void }> = ({ onFailure }) => {
 }
 
 export default Experience
-

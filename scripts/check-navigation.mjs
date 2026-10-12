@@ -15,12 +15,15 @@ let cleanup = () => {}
 try {
   for (const [source, name] of [
     ['src/stores/useExperience.ts', 'store'],
+    ['src/world/introComposition.ts', 'composition'],
     ['src/world/worldState.ts', 'world'],
     ['src/core/timeline/cinematicController.ts', 'controller'],
   ]) {
     const input = (await readFile(path.join(root, source), 'utf8'))
       .replace('../../stores/useExperience', './store.mjs')
       .replace('../../world/worldState', './world.mjs')
+      .replace('../../world/introComposition', './composition.mjs')
+      .replace('./introComposition', './composition.mjs')
     const output = ts.transpileModule(input, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 } }).outputText
     const filename = path.join(temporary, `${name}.mjs`)
     await writeFile(filename, output)
@@ -35,7 +38,7 @@ try {
   const reset = (mobile = false, reducedMotion = false) => {
     cleanup()
     store.setState({ currentPhase: 0, mode: MODES.LANDING, isTransitioning: false, isCubeReady: false, isMobile: mobile, reducedMotion })
-    Object.assign(world, { cameraX: 0, cameraY: 1.5, cameraZ: 14, targetX: 0, targetY: 0, targetZ: 0, cubeRotX: 0, cubeRotY: 0, cubeRotZ: 0 })
+    Object.assign(world, { cameraX: 0, cameraY: mobile ? 1.4 : 1.15, cameraZ: mobile ? 8.4 : 5.7, targetX: mobile ? .85 : 1.8, targetY: mobile ? -.8 : -.2, targetZ: 0, cubeRotX: -.12, cubeRotY: -.85, cubeRotZ: -.17 })
   }
   const finishCamera = () => {
     // Camera completion may start About's separate explore rotation.
@@ -45,8 +48,13 @@ try {
     assert.equal(store.getState().currentPhase, phase)
     assert.equal(store.getState().isTransitioning, false, 'Traversal buttons must unlock')
     assert.equal(store.getState().mode, phase ? MODES.EXPLORE : MODES.LANDING, 'The destination UI must open')
-    assert.equal(world.cameraZ, [14, mobile ? 8 : 4.5, -4, -8][phase])
-    assert.equal(world.targetX, phase === 1 ? 1.5 : 0)
+    assert.equal(world.cameraZ, [mobile ? 8.4 : 5.7, mobile ? 8 : 4.5, -4, -8][phase])
+    assert.equal(world.targetX, phase === 0 ? (mobile ? .85 : 1.8) : phase === 1 ? 1.5 : 0)
+    if (phase === 0) {
+      assert.equal(world.cubeRotX, -.12)
+      assert.equal(world.cubeRotY, -.85, 'Returning to Intro must restore the composed orientation')
+      assert.equal(world.cubeRotZ, -.17)
+    }
   }
 
   for (const mobile of [false, true]) for (const reduced of [false, true]) for (const phase of [0, 1, 2, 3]) {
@@ -54,7 +62,7 @@ try {
     controller.jumpToPhase(phase)
     controller.syncCameraToLayout()
     assert.equal(gsap.getTweensOf(world).length, 0, 'Startup must not animate behind the loading screen')
-    assert.equal(world.cameraZ, 14, 'Layout startup must not teleport to the pending bookmark')
+    assert.equal(world.cameraZ, mobile ? 8.4 : 5.7, 'Layout startup must not teleport to the pending bookmark')
     if (phase) assert.equal(store.getState().mode, MODES.TRAVERSAL)
     // React StrictMode cleanup/replay must preserve the ability to complete a bookmark.
     cleanup()

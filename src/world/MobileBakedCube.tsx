@@ -17,7 +17,7 @@ import { cubeInteraction } from './cubeInteraction'
 
 const CUBE_SIZE = 2
 const MOBILE_TRANSMISSION_SAMPLES = 4
-const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v5-filtered-edges-s${MOBILE_TRANSMISSION_SAMPLES}`
+const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v6-studio-s${MOBILE_TRANSMISSION_SAMPLES}`
 
 type DreiTransmissionRef = React.ElementRef<typeof MeshTransmissionMaterial>
 
@@ -150,7 +150,7 @@ function injectMobileOrosi(shader: CompilableShader) {
     .replace(
       '#include <roughnessmap_fragment>',
       `#include <roughnessmap_fragment>
-       roughnessFactor = mix(0.02, 0.84, orosi.lead);`
+       roughnessFactor = mix(0.04, 0.3, orosi.lead);`
     )
     .replace(
       '#include <metalnessmap_fragment>',
@@ -261,7 +261,7 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
         distortion={0}
         temporalDistortion={0}
         clearcoat={1}
-        clearcoatRoughness={0.05}
+        clearcoatRoughness={0.12}
         side={FrontSide}
         depthWrite
         toneMapped

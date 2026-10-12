@@ -1,4 +1,11 @@
-export const cubeInteraction = { rotationX: 0, rotationY: 0, hitPointerId: -1 }
+export const cubeInteraction = { rotationX: 0, rotationY: 0, hitPointerId: -1, dragging: false }
+
+// Bounded angular speed gives a large object weight, even after a fast swipe.
+export function weightedRotation(current: number, target: number, delta: number) {
+  const dt = Math.min(delta, .05)
+  const step = (target - current) * (1 - Math.exp(-4 * dt))
+  return current + Math.max(-1.2 * dt, Math.min(1.2 * dt, step))
+}
 
 export const TAP_SLOP = 10
 
