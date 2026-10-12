@@ -1,11 +1,12 @@
 import gsap from 'gsap'
 import { useExperience, MODES } from '../../stores/useExperience'
 import { worldState } from '../../world/worldState'
+import { introComposition, INTRO_ROTATION } from '../../world/introComposition'
 
 export const FIRST_INTERIOR_PHASE = 1
 export const MAX_PHASE = 3
 
-const TRANSITION_DURATION = 1.2
+const TRANSITION_DURATION = 2.1
 const duration = (seconds: number) => useExperience.getState().reducedMotion ? 0.01 : seconds
 const CAMERA_TWEEN_PROPERTIES = 'cameraX,cameraY,cameraZ,targetX,targetY,targetZ'
 const EXPLORE_TWEEN_PROPERTIES = 'targetX,targetY,cubeRotX,cubeRotY,cubeRotZ'
@@ -26,12 +27,15 @@ const keepSceneMoving = (seconds: number) => {
   })
 }
 
-const getCameraPositions = (isMobile: boolean) => [
-  { z: isMobile ? 14 : 14, y: 1.5, targetX: 0, targetY: 0, targetZ: 0 },
-  { z: isMobile ? 8 : 4.5, y: isMobile ? 1.5 : 0.5, targetX: 0, targetY: 0, targetZ: 0 },
-  { z: -4, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
-  { z: -8, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
-]
+const getCameraPositions = (isMobile: boolean) => {
+  const intro = introComposition(isMobile)
+  return [
+    { z: intro.cameraZ, y: intro.cameraY, targetX: intro.targetX, targetY: intro.targetY, targetZ: 0 },
+    { z: isMobile ? 8 : 4.5, y: isMobile ? 1.5 : 0.5, targetX: 0, targetY: 0, targetZ: 0 },
+    { z: -4, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
+    { z: -8, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
+  ]
+}
 
 // ============================================================================
 // THE ORACLE'S TARGET: Control the spinning cube's position in Phase 1
@@ -70,7 +74,7 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
 
   killCameraTween()
 
-  keepSceneMoving(TRANSITION_DURATION + 2)
+  keepSceneMoving(TRANSITION_DURATION + 3)
   const tween = gsap.to(worldState, {
     cameraX: 0,
     cameraY: target.y,
@@ -80,7 +84,7 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
     targetZ: target.targetZ,
     duration: duration(TRANSITION_DURATION),
     overwrite: 'auto',
-    ease: 'power3.inOut',
+    ease: 'sine.inOut',
     onComplete: () => {
       if (cameraTween === tween) cameraTween = null
       onComplete?.()
@@ -93,7 +97,10 @@ const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
 export const syncCameraToLayout = (): void => {
   const state = useExperience.getState()
   // Startup navigation is resumed when the scene is ready, from its visible origin.
-  if (!state.isCubeReady) return
+  if (!state.isCubeReady) {
+    Object.assign(worldState, introComposition(state.isMobile))
+    return
+  }
   if (state.currentPhase > 1) return
 
   const target = getCameraPositions(state.isMobile)[state.currentPhase]
@@ -165,9 +172,7 @@ const resetToLanding = () => {
     targetX: landing.targetX,
     targetY: landing.targetY,
     targetZ: landing.targetZ,
-    cubeRotX: 0,
-    cubeRotY: 0,
-    cubeRotZ: 0,
+    ...INTRO_ROTATION,
   })
 }
 
@@ -267,13 +272,10 @@ export const resumePendingPhase = (): void => {
 
 export const enterExploreMode = (): void => {
   const state = useExperience.getState()
-  keepSceneMoving(2)
+  keepSceneMoving(3)
   state.setMode(MODES.EXPLORE)
 
   if (state.currentPhase !== 1) return
-
-  const randomSpinX = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI)
-  const randomSpinY = (Math.random() > 0.5 ? 0.5 : -0.5) * (Math.PI * 0.25 + Math.random() * Math.PI)
 
   // Fetch our new combined X and Y targets
   const exploreTarget = getAboutExploreTarget(state.isMobile)
@@ -281,12 +283,12 @@ export const enterExploreMode = (): void => {
   killExploreTween()
   exploreTween = gsap.to(worldState, {
     targetX: exploreTarget.x,
-    targetY: exploreTarget.y, // No longer hardcoded to 0!
-    cubeRotX: state.reducedMotion ? 0.2 : randomSpinX,
-    cubeRotY: state.reducedMotion ? -0.3 : randomSpinY,
-    cubeRotZ: state.reducedMotion ? 0 : (Math.random() - 0.5) * Math.PI * 0.5,
-    duration: duration(1.5),
-    ease: 'power3.inOut',
+    targetY: exploreTarget.y,
+    cubeRotX: .38,
+    cubeRotY: -.94,
+    cubeRotZ: -.08,
+    duration: duration(2.4),
+    ease: 'sine.inOut',
     onComplete: () => {
       exploreTween = null
     },
@@ -304,11 +306,9 @@ export const exitExploreMode = (): void => {
   exploreTween = gsap.to(worldState, {
     targetX: baseTarget.targetX,
     targetY: baseTarget.targetY,
-    cubeRotX: 0,
-    cubeRotY: 0,
-    cubeRotZ: 0,
-    duration: duration(1),
-    ease: 'power3.inOut',
+    ...INTRO_ROTATION,
+    duration: duration(1.8),
+    ease: 'sine.inOut',
     onComplete: () => {
       exploreTween = null
     },

@@ -1,5 +1,6 @@
 import { useExperience, MODES } from '../../stores/useExperience'
 import { worldState } from '../../world/worldState'
+import { introComposition } from '../../world/introComposition'
 
 export const initExperience = (): void => {
   const state = useExperience.getState()
@@ -8,15 +9,5 @@ export const initExperience = (): void => {
   state.setMode(MODES.LANDING)
   state.setIsTransitioning(false)
 
-  Object.assign(worldState, {
-    cameraX: 0,
-    cameraY: 1.5,
-    cameraZ:  14,
-    targetX: 0,
-    targetY: 0,
-    targetZ: 0,
-    cubeRotX: 0,
-    cubeRotY: 0,
-    cubeRotZ: 0,
-  })
+  Object.assign(worldState, introComposition(state.isMobile))
 }

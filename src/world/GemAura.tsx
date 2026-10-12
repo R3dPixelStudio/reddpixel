@@ -25,8 +25,8 @@ void main() {
     float rays = sin(angle * 6.0 + uTime * 0.2) * 0.5 + 0.5;
     rays *= sin(angle * 12.0 - uTime * 0.1) * 0.5 + 0.5;
 
-    float coreGlow = smoothstep(1.0, 0.0, dist);
-    float haloGlow = smoothstep(0.8, 0.2, dist);
+    float coreGlow = 1.0 - smoothstep(0.0, 1.0, dist);
+    float haloGlow = 1.0 - smoothstep(0.2, 0.8, dist);
 
     vec3 deepRed = vec3(0.08, 0.0, 0.01);
     vec3 brightRed = vec3(0.4, 0.0, 0.05);
@@ -34,7 +34,7 @@ void main() {
     vec3 finalColor = mix(deepRed, brightRed, haloGlow);
     finalColor += vec3(1.0, 0.1, 0.2) * rays * coreGlow * 0.2;
 
-    float alpha = (coreGlow * 0.6 + rays * 0.2) * uLanding;
+    float alpha = (coreGlow * 0.22 + rays * 0.08) * uLanding;
 
     gl_FragColor = vec4(finalColor, alpha);
 }

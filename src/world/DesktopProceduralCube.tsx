@@ -23,7 +23,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
 
     const mat = new MeshPhysicalMaterial({
       color: 0xffffff, transmission: 1.0, opacity: 1.0, metalness: 0.1, roughness: 0.0,
-      ior: 2.2, thickness: 1.5, clearcoat: 1.0, clearcoatRoughness: 0.05,
+      ior: 2.2, thickness: 1.5, clearcoat: 1.0, clearcoatRoughness: 0.12,
       side: DoubleSide, transparent: true, depthWrite: true       
     })
 
@@ -99,13 +99,13 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
 
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\n if (orosi.lead < 0.5) normal = normalize(normal + orosi.normalTilt);`)
-        .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb = mix(orosi.color, vec3(0.05), orosi.lead);`)
-        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n roughnessFactor = mix(0.0, 0.9, orosi.lead);`)
+        .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb = mix(orosi.color, vec3(0.16, 0.11, 0.075), orosi.lead);`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n roughnessFactor = mix(0.045, 0.28, orosi.lead);`)
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n metalnessFactor = mix(0.1, 1.0, orosi.lead);`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n if (!gl_FrontFacing) { vec3 coreLight = vec3(0.55, 0.48, 0.42); totalEmissiveRadiance += coreLight * orosi.color * (1.0 - orosi.lead); }`)
     }
     
-    mat.customProgramCacheKey = () => 'vitrail_procedural_v4_main'
+    mat.customProgramCacheKey = () => 'vitrail_procedural_v5_studio'
 
     const depthMat = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide })
     depthMat.onBeforeCompile = (shader) => {

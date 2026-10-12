@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils } from 'three'
 import { MODES, useExperience } from '../stores/useExperience'
-import { cubeInteraction, isCubeTap, neutralRotation } from './cubeInteraction'
+import { cubeInteraction, isCubeTap, neutralRotation, weightedRotation } from './cubeInteraction'
 
 type Gesture = { id: number; startX: number; startY: number; lastX: number; lastY: number; distanceSquared: number }
 
@@ -20,6 +20,7 @@ export function useCubeInteraction() {
     const release = () => {
       const previous = gesture.current
       gesture.current = null
+      cubeInteraction.dragging = false
       if (previous && canvas.hasPointerCapture(previous.id)) canvas.releasePointerCapture(previous.id)
     }
     const neutralize = () => {
@@ -32,7 +33,7 @@ export function useCubeInteraction() {
     }
     const down = (event: PointerEvent) => {
       if (!event.isPrimary) { neutralize(); return }
-      if ((!useExperience.getState().isMobile && event.pointerType === 'mouse') || !event.isPrimary || event.button !== 0 || !canInteract()) return
+      if (event.button !== 0 || !canInteract()) return
       release()
       cubeInteraction.hitPointerId = -1
       gesture.current = { id: event.pointerId, startX: event.clientX, startY: event.clientY, lastX: event.clientX, lastY: event.clientY, distanceSquared: 0 }
@@ -41,12 +42,14 @@ export function useCubeInteraction() {
     const move = (event: PointerEvent) => {
       const current = gesture.current
       if (!current || event.pointerId !== current.id) return
+      if (event.pointerType === 'mouse' && cubeInteraction.hitPointerId !== event.pointerId) return
       if (!canInteract()) { neutralize(); return }
       current.distanceSquared = Math.max(current.distanceSquared, (event.clientX - current.startX) ** 2 + (event.clientY - current.startY) ** 2)
       if (!isCubeTap(current.distanceSquared)) {
+        cubeInteraction.dragging = true
         if (!canvas.hasPointerCapture(event.pointerId)) canvas.setPointerCapture(event.pointerId)
-        const sensitivity = 3.5 / Math.max(280, canvas.clientWidth)
-        target.current.y += (event.clientX - current.lastX) * sensitivity
+        const sensitivity = 2.4 / Math.max(280, Math.min(700, canvas.clientWidth))
+        target.current.y = MathUtils.clamp(target.current.y + (event.clientX - current.lastX) * sensitivity, cubeInteraction.rotationY - .7, cubeInteraction.rotationY + .7)
         target.current.x = MathUtils.clamp(target.current.x + (event.clientY - current.lastY) * sensitivity, -.9, .9)
       }
       current.lastX = event.clientX
@@ -56,12 +59,12 @@ export function useCubeInteraction() {
       const current = gesture.current
       if (!current || event.pointerId !== current.id) return
       current.distanceSquared = Math.max(current.distanceSquared, (event.clientX - current.startX) ** 2 + (event.clientY - current.startY) ** 2)
-      if (canInteract() && isCubeTap(current.distanceSquared) && cubeInteraction.hitPointerId !== event.pointerId) {
+      if (event.pointerType !== 'mouse' && canInteract() && isCubeTap(current.distanceSquared) && cubeInteraction.hitPointerId !== event.pointerId) {
         const bounds = canvas.getBoundingClientRect()
         target.current.y += ((event.clientX - bounds.left) / bounds.width - .5) * .7
         target.current.x = MathUtils.clamp(target.current.x + ((event.clientY - bounds.top) / bounds.height - .5) * .4, -.9, .9)
       }
-      gesture.current = null
+      release()
     }
     const cancel = (event: PointerEvent) => {
       if (gesture.current?.id === event.pointerId) neutralize()
@@ -73,7 +76,8 @@ export function useCubeInteraction() {
           (state.isContentView && !previous.isContentView) || (state.reducedMotion && !previous.reducedMotion) ||
           (state.isSceneObscured && !previous.isSceneObscured)) neutralize()
     })
-    canvas.addEventListener('pointerdown', down)
+    // Capture creates the candidate before R3F marks whether it hit the cube.
+    canvas.addEventListener('pointerdown', down, true)
     window.addEventListener('pointerdown', secondary)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
@@ -83,7 +87,7 @@ export function useCubeInteraction() {
     document.addEventListener('visibilitychange', hidden)
     return () => {
       unsubscribe(); release()
-      canvas.removeEventListener('pointerdown', down)
+      canvas.removeEventListener('pointerdown', down, true)
       window.removeEventListener('pointerdown', secondary)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
@@ -100,8 +104,8 @@ export function useCubeInteraction() {
     const state = useExperience.getState()
     if (state.reducedMotion) { cubeInteraction.rotationX = 0; cubeInteraction.rotationY = 0 }
     else {
-      cubeInteraction.rotationX = MathUtils.damp(cubeInteraction.rotationX, target.current.x, 9, Math.min(delta, .1))
-      cubeInteraction.rotationY = MathUtils.damp(cubeInteraction.rotationY, target.current.y, 9, Math.min(delta, .1))
+      cubeInteraction.rotationX = weightedRotation(cubeInteraction.rotationX, target.current.x, delta)
+      cubeInteraction.rotationY = weightedRotation(cubeInteraction.rotationY, target.current.y, delta)
     }
     const settled = Math.abs(cubeInteraction.rotationX - target.current.x) < .002 && Math.abs(cubeInteraction.rotationY - target.current.y) < .002
     if (settled && !gesture.current && state.isCubeInteracting) state.setCubeInteracting(false)
