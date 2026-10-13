@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Group, ShaderMaterial } from 'three'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Group, ShaderMaterial, Vector3 } from 'three'
 import { useExperience } from '../stores/useExperience'
 import { outerSceneVisibility } from './outerScene'
 import { worldState } from './worldState'
+import { useAboutField } from './useAboutField'
 
 const particleVertex = /* glsl */ `
 attribute float aSeed;
@@ -13,6 +14,14 @@ uniform float uPixelRatio;
 uniform float uFlow;
 uniform float uRush;
 uniform float uMobile;
+uniform float uFocus;
+uniform vec3 uSource;
+uniform vec3 uLeftB;
+uniform vec3 uLeftC;
+uniform vec3 uLeftD;
+uniform vec3 uRightB;
+uniform vec3 uRightC;
+uniform vec3 uRightD;
 varying float vGlow;
 varying float vHot;
 vec3 bezier(vec3 a,vec3 b,vec3 c,vec3 d,float t) {
@@ -31,6 +40,10 @@ void main() {
     c=vec3(3.4,.85,-1.4);
     d=vec3(-.7,.85,-1.8);
   }
+  a=mix(a,uSource,uFocus);
+  b=mix(b,aRibbon>.5?uRightB:uLeftB,uFocus);
+  c=mix(c,aRibbon>.5?uRightC:uLeftC,uFocus);
+  d=mix(d,aRibbon>.5?uRightD:uLeftD,uFocus);
   vec3 p=bezier(a,b,c,d,t);
   float twist=t*12.56637+uTime*.18+aRibbon;
   float width=mix(.016,.024,uMobile);
@@ -39,12 +52,13 @@ void main() {
   p.z+=position.z*width;
   p.y+=aRibbon*.055+sin(t*6.+uTime*.22+aRibbon)*.035;
   p.z+=aRibbon*.08;
-  p.x*=mix(1.,.78,uMobile);
+  p.x*=mix(mix(1.,.78,uMobile),1.,uFocus);
   p.z-=uRush*1.1*sin(t*3.14159);
   p.y+=uRush*.3*sin(t*6.28318);
   float packet=pow(.5+.5*sin(t*12.56637-uTime*1.25+aRibbon*.8),4.);
   vGlow=(.2+packet*.8)*(.55+aSeed*.45)*smoothstep(0.,.05,t)*(1.-smoothstep(.95,1.,t));
   vGlow*=1.+uRush*.85;
+  vGlow*=1.+uFocus*exp(-t*24.)*(.8+.2*sin(uTime*1.1));
   vHot=step(.96,aSeed);
   vec4 view=modelViewMatrix*vec4(p,1.);
   gl_Position=projectionMatrix*view;
@@ -65,9 +79,11 @@ void main() {
 export default function IntroStage() {
   const mobile=useExperience(state=>state.isMobile)
   const lowEnd=useExperience(state=>state.isLowEnd)
+  const field=useAboutField(mobile)
+  const lastField=useRef<typeof field | null>(null)
   const group=useRef<Group>(null)
   const particleMaterial=useRef<ShaderMaterial>(null)
-  const particleUniforms=useMemo(()=>({uTime:{value:0},uFlow:{value:0},uRush:{value:0},uOpacity:{value:1},uPixelRatio:{value:1},uMobile:{value:0}}),[])
+  const particleUniforms=useMemo(()=>({uTime:{value:0},uFlow:{value:0},uRush:{value:0},uOpacity:{value:1},uPixelRatio:{value:1},uMobile:{value:0},uFocus:{value:0},uSource:{value:new Vector3()},uLeftB:{value:new Vector3()},uLeftC:{value:new Vector3()},uLeftD:{value:new Vector3()},uRightB:{value:new Vector3()},uRightC:{value:new Vector3()},uRightD:{value:new Vector3()}}),[])
   const geometry=useMemo(()=>{
     const ribbons=mobile||lowEnd?2:3;
     const perRibbon=lowEnd?200:mobile?325:600;
@@ -92,6 +108,17 @@ export default function IntroStage() {
   },[])
 
   useFrame(({clock,gl,camera},delta)=>{
+    const changed=field.sync();
+    if(changed||lastField.current!==field){
+      particleUniforms.uSource.value.copy(field.source);
+      particleUniforms.uLeftB.value.copy(field.leftB);
+      particleUniforms.uLeftC.value.copy(field.leftC);
+      particleUniforms.uLeftD.value.copy(field.leftD);
+      particleUniforms.uRightB.value.copy(field.rightB);
+      particleUniforms.uRightC.value.copy(field.rightC);
+      particleUniforms.uRightD.value.copy(field.rightD);
+      lastField.current=field;
+    }
     const visibility=outerSceneVisibility(camera.position.z)
     if(group.current)group.current.visible=visibility>.002;
     if(visibility<=.002||!particleMaterial.current)return;
@@ -99,7 +126,8 @@ export default function IntroStage() {
     sparks.uTime.value=useExperience.getState().reducedMotion?0:clock.elapsedTime;
     sparks.uFlow.value=(sparks.uFlow.value+Math.min(delta,.05)*worldState.particleRush*.32)%1;
     sparks.uRush.value=worldState.particleRush;
-    sparks.uOpacity.value=visibility*(1-worldState.aboutQuiet*.8);
+    sparks.uOpacity.value=visibility;
+    sparks.uFocus.value=worldState.aboutFocus;
     sparks.uPixelRatio.value=Math.min(gl.getPixelRatio(),1.5);
     sparks.uMobile.value=mobile?1:0;
 

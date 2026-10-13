@@ -7,15 +7,34 @@ import { PROFILE, EXPERTISE, EXPERIENCES, LANGUAGES, CERTIFICATES, SKILLS } from
 import { GIRIH_PATH } from '../../content/ornament'
 import LineIcon from '../art/LineIcon'
 import AboutSignature from '../art/AboutSignature'
+import { aboutSourceAnchor } from '../../world/aboutComposition'
 
 export default function AboutPhaseUI() {
   const phase = useExperience(state => state.currentPhase)
   const mode = useExperience(state => state.mode)
   const reducedMotion = useExperience(state => state.reducedMotion)
+  const transitioning = useExperience(state => state.isTransitioning)
   const active = phase === 1 && mode === MODES.EXPLORE
   const root = useRef<HTMLElement>(null)
   const timeline = useRef<gsap.core.Timeline | null>(null)
   const [portraitTurned, setPortraitTurned] = useState(false)
+  useEffect(() => {
+    const frame = root.current?.querySelector<HTMLElement>('.about-frame')
+    if (!frame) return
+    const sync = () => {
+      const rect = frame.getBoundingClientRect()
+      aboutSourceAnchor.left = rect.left / window.innerWidth * 2 - 1
+      aboutSourceAnchor.right = (rect.left + rect.width * .97) / window.innerWidth * 2 - 1
+      aboutSourceAnchor.top = 1 - (rect.top + rect.height * .04) / window.innerHeight * 2
+      aboutSourceAnchor.bottom = 1 - (rect.top + rect.height * .97) / window.innerHeight * 2
+      aboutSourceAnchor.revision++
+    }
+    const observer = new ResizeObserver(sync)
+    observer.observe(frame)
+    window.addEventListener('resize', sync)
+    sync()
+    return () => { observer.disconnect(); window.removeEventListener('resize', sync) }
+  }, [])
   useEffect(() => useExperience.subscribe((state, previous) => {
     if (state.currentPhase !== 1 || previous.currentPhase === 1) return
     root.current?.querySelector<HTMLElement>('.about-reading-panel')?.scrollTo({ top: 0, behavior: 'instant' })
@@ -44,11 +63,11 @@ export default function AboutPhaseUI() {
     const length = path.getTotalLength()
     gsap.set(path, { strokeDasharray: `${length} ${length}`, strokeDashoffset: length })
     timeline.current = gsap.timeline({ paused: true })
-      .fromTo(root.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: .12 })
-      .fromTo('.persian-node', { scale: 0, rotation: -135 }, { scale: 1, rotation: 45, duration: .45, ease: 'back.out(1.4)' })
-      .fromTo(path, { strokeDashoffset: length }, { strokeDashoffset: 0, duration: .85, ease: 'power2.inOut' })
-      .fromTo('.about-reading-panel', { autoAlpha: 0 }, { autoAlpha: 1, duration: .2 })
-      .fromTo('.about-reveal', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .4, stagger: .045, ease: 'power3.out' }, '-=.1')
+      .fromTo(root.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: .06 })
+      .fromTo('.persian-node', { scale: 0, rotation: -45 }, { scale: 1, rotation: 45, duration: .35, ease: 'power2.out' })
+      .fromTo(path, { strokeDashoffset: length }, { strokeDashoffset: 0, duration: .7, ease: 'sine.inOut' })
+      .fromTo('.about-reading-panel', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16 })
+      .fromTo('.about-reveal', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .3, stagger: .035, ease: 'power3.out' }, '-=.04')
   }, { scope: root })
   useGSAP(() => {
     if (active) timeline.current?.timeScale(reducedMotion ? 1000 : 1).restart()
@@ -77,7 +96,7 @@ export default function AboutPhaseUI() {
     gsap.delayedCall(delay, watch)
     return () => observer?.disconnect()
   }, { scope: root, dependencies: [active, reducedMotion], revertOnUpdate: true })
-  return <section ref={root} data-active={active} aria-label="About REDDPIXEL" aria-hidden={!active} inert={!active} className="about-phase phase-panel invisible">
+  return <section ref={root} data-active={active} aria-label="About REDDPIXEL" aria-hidden={!active} inert={!active || transitioning} className="about-phase phase-panel invisible">
     <div className="about-frame">
       <span className="persian-node" aria-hidden="true" />
       <svg className="about-trace" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40H970V970H30V40H0" /></svg>

@@ -4,6 +4,7 @@ import { AdditiveBlending, PlaneGeometry, ShaderMaterial, Mesh, Vector3 } from '
 import { outerSceneVisibility } from './outerScene'
 import { worldState } from './worldState'
 import { useExperience } from '../stores/useExperience'
+import { useAboutField } from './useAboutField'
 
 const vertexShader = /* glsl */ `
 varying vec2 vUv;
@@ -42,6 +43,8 @@ void main() {
 `
 
 const GemAura: React.FC = () => {
+  const mobile = useExperience(state => state.isMobile)
+  const field = useAboutField(mobile)
   const meshRef = useRef<Mesh>(null)
   const cameraDirection = useRef(new Vector3())
 
@@ -73,11 +76,12 @@ const GemAura: React.FC = () => {
     if (visibility <= .002) return
     const mat = meshRef.current.material as ShaderMaterial
     mat.uniforms.uTime.value = useExperience.getState().reducedMotion ? 5 : state.clock.elapsedTime
-    mat.uniforms.uLanding.value = visibility * (1 - worldState.aboutQuiet * .78)
+    mat.uniforms.uLanding.value = visibility
 
     meshRef.current.quaternion.copy(state.camera.quaternion)
     cameraDirection.current.copy(state.camera.position).normalize().multiplyScalar(-4)
-    meshRef.current.position.copy(cameraDirection.current)
+    field.sync()
+    meshRef.current.position.copy(cameraDirection.current).lerp(field.aura, worldState.aboutFocus)
   })
 
   return (

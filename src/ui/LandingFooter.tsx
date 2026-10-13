@@ -13,7 +13,7 @@ export default function LandingFooter() {
     <span className="intro-rule" aria-hidden="true" />
     <button className="intro-explore" disabled={!visible} onClick={() => jumpToPhase(1)}>
       <span className="intro-signal" aria-hidden="true" />
-      <span>Enter the experience</span>
+      <span>Follow the spark</span>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
     </button>
   </section>

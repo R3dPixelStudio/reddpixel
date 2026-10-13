@@ -72,6 +72,9 @@ const Experience: React.FC<{ onFailure: () => void }> = ({ onFailure }) => {
   const phase = useExperience((state) => state.currentPhase)
   const mode = useExperience((state) => state.mode)
   const isMobilePanel = isMobile && phase > 0 && mode === MODES.EXPLORE
+  const reducedMotion = useExperience(state => state.reducedMotion)
+  const readingAbout = phase === 1 && mode === MODES.EXPLORE
+  const ambientMotion = readingAbout ? !reducedMotion && !isLowEnd : !isMobilePanel || phase === 2
   const isSceneSettling = useExperience((state) => state.isSceneSettling)
   const isCubeInteracting = useExperience((state) => state.isCubeInteracting)
   const isContentView = useExperience((state) => state.isContentView)
@@ -98,7 +101,7 @@ const Experience: React.FC<{ onFailure: () => void }> = ({ onFailure }) => {
       <Canvas
         ref={canvasRef}
         fallback={<p>The 3D scene is unavailable. Open the portfolio text view to explore the work.</p>}
-        frameloop={isVisible && !isContentView && (!isCubeReady || isTransitioning || isSceneSettling || isCubeInteracting || (!isSceneObscured && (!isMobilePanel || phase === 2))) ? 'always' : 'never'}
+        frameloop={isVisible && !isContentView && (!isCubeReady || isTransitioning || isSceneSettling || isCubeInteracting || (!isSceneObscured && ambientMotion)) ? 'always' : 'never'}
         dpr={isLowEnd ? 1 : isMobile ? [1, 1.25] : [1, 1.5]}
         style={{ touchAction: 'none' }}
         gl={{

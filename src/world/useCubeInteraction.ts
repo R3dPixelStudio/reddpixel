@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MathUtils } from 'three'
-import { MODES, useExperience } from '../stores/useExperience'
+import { useExperience } from '../stores/useExperience'
 import { cubeInteraction, isCubeTap, neutralRotation, weightedRotation } from './cubeInteraction'
 
 type Gesture = { id: number; startX: number; startY: number; lastX: number; lastY: number; distanceSquared: number }
@@ -15,7 +15,7 @@ export function useCubeInteraction() {
     const canInteract = () => {
       const state = useExperience.getState()
       return state.isCubeReady && !state.isTransitioning && !state.isContentView && !state.isSceneObscured && !state.reducedMotion &&
-        (state.currentPhase === 0 || (state.currentPhase === 1 && state.mode === MODES.EXPLORE))
+        state.currentPhase === 0
     }
     const release = () => {
       const previous = gesture.current
