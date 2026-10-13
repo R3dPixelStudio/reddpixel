@@ -49,6 +49,6 @@ function IntroCue({ mobile }: { mobile: boolean }) {
 
   return <div className="cube-touch-prompt" data-active={active} aria-hidden="true">
     <svg viewBox="0 0 40 40" fill="none"><path className="tap-rays" d="M10 14a7 7 0 0 1 14 0 M7 14a10 10 0 0 1 20 0" /><path d="M14 26V14a3 3 0 0 1 6 0v8l3-2 8 5v5c0 4-3 7-7 7h-5l-8-9a3 3 0 0 1 4-4l3 3" /></svg>
-    <span>{mobile ? 'Tap to enter · Swipe to turn' : 'Click to enter · Drag to turn'}</span>
+    <span>{mobile ? 'Tap to follow · Swipe to turn' : 'Click to follow · Drag to turn'}</span>
   </div>
 }

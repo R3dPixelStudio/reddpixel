@@ -35,7 +35,7 @@ export default function ConcreteFloor() {
   const floor = useRef<Mesh>(null)
   const uniforms = useMemo(() => ({ uOpacity: { value: 1 } }), [])
   useFrame(({ camera }) => {
-    const opacity = outerSceneVisibility(camera.position.z) * (1 - worldState.aboutQuiet)
+    const opacity = outerSceneVisibility(camera.position.z) * (1 - worldState.aboutFocus)
     if (floor.current) floor.current.visible = opacity > .002
     if (material.current) material.current.uniforms.uOpacity.value = opacity
   })

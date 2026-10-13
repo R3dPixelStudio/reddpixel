@@ -2,13 +2,14 @@ import gsap from 'gsap'
 import { useExperience, MODES } from '../../stores/useExperience'
 import { worldState } from '../../world/worldState'
 import { introComposition, INTRO_ROTATION } from '../../world/introComposition'
+import { aboutComposition } from '../../world/aboutComposition'
 
 export const FIRST_INTERIOR_PHASE = 1
 export const MAX_PHASE = 3
 
 const TRANSITION_DURATION = 1.85
 const duration = (seconds: number) => useExperience.getState().reducedMotion ? 0.01 : seconds
-const CAMERA_TWEEN_PROPERTIES = 'cameraX,cameraY,cameraZ,targetX,targetY,targetZ,cubeX,particleRush,aboutQuiet'
+const CAMERA_TWEEN_PROPERTIES = 'cameraX,cameraY,cameraZ,targetX,targetY,targetZ,cubeX,particleRush,aboutFocus'
 const EXPLORE_TWEEN_PROPERTIES = 'cubeRotX,cubeRotY,cubeRotZ'
 
 let cameraTween: gsap.core.Animation | null = null
@@ -26,17 +27,12 @@ const keepSceneMoving = (seconds: number) => {
   })
 }
 
-const getCameraPositions = (isMobile: boolean) => {
-  const intro = introComposition(isMobile)
-  return [
-    { z: intro.cameraZ, y: intro.cameraY, targetX: intro.targetX, targetY: intro.targetY, targetZ: 0 },
-    { z: isMobile ? 6.6 : 4.4, y: isMobile ? 1.1 : 0.7, targetX: 0, targetY: 0, targetZ: 0 },
-    { z: -4, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
-    { z: -8, y: 0, targetX: 0, targetY: 0, targetZ: -20 },
-  ]
-}
-
-const aboutCubeX = (mobile: boolean) => mobile ? -7 : -9
+const getCameraPositions = (isMobile: boolean) => [
+  introComposition(isMobile),
+  aboutComposition(isMobile),
+  { cameraX: 0, cameraY: 0, cameraZ: -4, targetX: 0, targetY: 0, targetZ: -20 },
+  { cameraX: 0, cameraY: 0, cameraZ: -8, targetX: 0, targetY: 0, targetZ: -20 },
+]
 
 const killCameraTween = () => {
   cameraTween?.kill()
@@ -58,41 +54,41 @@ const finishTransition = (phase: number) => {
 
 const animateCameraToPhase = (phaseIndex: number, onComplete?: () => void) => {
   const state = useExperience.getState()
-  const positions = getCameraPositions(state.isMobile)
-  const target = positions[phaseIndex] ?? positions[0]
-
+  const target = getCameraPositions(state.isMobile)[phaseIndex]
+  const intro = introComposition(state.isMobile)
   killCameraTween()
-
-  const cameraTarget = {
-    cameraX: 0,
-    cameraY: target.y,
-    cameraZ: target.z,
-    targetX: target.targetX,
-    targetY: target.targetY,
-    targetZ: target.targetZ,
-  }
-  const travel = gsap.timeline({
-    onComplete: () => {
-      if (cameraTween === travel) cameraTween = null
-      onComplete?.()
-    },
-  })
+  const travel = gsap.timeline({ onComplete: () => {
+    if (cameraTween !== travel) return
+    cameraTween = null
+    onComplete?.()
+  } })
   cameraTween = travel
+  const revealAbout = () => {
+    const current = useExperience.getState()
+    if (cameraTween === travel && current.currentPhase === 1) current.setMode(MODES.EXPLORE)
+  }
   if (state.reducedMotion) {
-    travel.to(worldState, { ...cameraTarget, ...(phaseIndex === 1 ? { cubeRotX: .18, cubeRotY: -1.9, cubeRotZ: -.08 } : INTRO_ROTATION), cubeX: phaseIndex === 1 ? aboutCubeX(state.isMobile) : 0, particleRush: 0, aboutQuiet: phaseIndex === 1 ? 1 : 0, duration: .01 })
+    travel.to(worldState, { ...target, ...INTRO_ROTATION, cubeX: 0, particleRush: 0, aboutFocus: phaseIndex === 1 ? 1 : 0, duration: .01 })
+  } else if (phaseIndex === 1 && worldState.aboutFocus > .01 && worldState.cameraZ > 1.45) {
+    // Resizes and interrupted pans continue toward the source without retracing the cube.
+    travel.to(worldState, { ...target, aboutFocus: 1, particleRush: 0, cubeX: 0, duration: .65, ease: 'sine.inOut' })
+      .call(revealAbout, [], .2)
   } else if (phaseIndex === 1) {
-    // Returning from the inner world first brings the camera outside the glass.
-    const outsideAt = worldState.cameraZ < 1.45 ? 1.35 : 0
-    if (outsideAt) travel.to(worldState, { ...cameraTarget, cubeX: 0, ...INTRO_ROTATION, duration: outsideAt, ease: 'sine.inOut' }, 0)
-    travel.to(worldState, { ...cameraTarget, cubeX: aboutCubeX(state.isMobile), cubeRotX: .18, cubeRotY: -1.9, cubeRotZ: -.08, duration: 1.45, ease: 'power2.inOut' }, outsideAt)
-      .to(worldState, { particleRush: 1, duration: .3, ease: 'power2.out' }, outsideAt)
-      .to(worldState, { particleRush: 0, duration: .85, ease: 'sine.inOut' }, outsideAt + .3)
-      .to(worldState, { aboutQuiet: 1, duration: .55, ease: 'sine.inOut' }, outsideAt + .9)
+    // Come outside first when returning from the interior. The cube never translates.
+    const outsideAt = worldState.cameraZ < 1.45 ? 1.3 : 0
+    if (outsideAt) travel.to(worldState, { ...intro, cubeX: 0, aboutFocus: 0, particleRush: 0, duration: outsideAt, ease: 'sine.inOut' }, 0)
+    // First show the previously hidden side, then follow the flow to its source.
+    travel.to(worldState, { cameraX: -1.15, cameraY: intro.cameraY, cameraZ: intro.cameraZ, targetX: 0, targetY: .1, targetZ: 0, ...INTRO_ROTATION, cubeX: 0, duration: .55, ease: 'sine.inOut' }, outsideAt)
+      .to(worldState, { ...target, aboutFocus: 1, duration: 1.3, ease: 'power2.inOut' }, outsideAt + .55)
+      .to(worldState, { particleRush: .8, duration: .4, ease: 'sine.out' }, outsideAt + .3)
+      .to(worldState, { particleRush: 0, duration: 1.05, ease: 'sine.inOut' }, outsideAt + .7)
+      .call(revealAbout, [], outsideAt + 1.1)
+  } else if (phaseIndex > 1 && (Math.abs(worldState.cameraX) > .1 || worldState.aboutFocus > .01)) {
+    // Return to the glass before crossing it; preserve the interior's geometric reveal.
+    travel.to(worldState, { cameraX: 0, cameraY: state.isMobile ? 1.1 : .7, cameraZ: state.isMobile ? 6.6 : 4.4, targetX: 0, targetY: 0, targetZ: 0, ...INTRO_ROTATION, cubeX: 0, aboutFocus: 0, particleRush: 0, duration: 1.25, ease: 'sine.inOut' }, 0)
+      .to(worldState, { ...target, duration: TRANSITION_DURATION, ease: 'sine.inOut' }, 1.25)
   } else {
-    // A shifted cube must be seated in the camera's path before the dive starts.
-    const returnAt = phaseIndex > 1 && Math.abs(worldState.cubeX) > .01 ? 1.2 : 0
-    if (returnAt) travel.to(worldState, { cubeX: 0, ...INTRO_ROTATION, aboutQuiet: 0, particleRush: 0, targetX: 0, targetY: 0, targetZ: 0, duration: returnAt, ease: 'power2.inOut' }, 0)
-    travel.to(worldState, { ...cameraTarget, cubeX: 0, ...INTRO_ROTATION, particleRush: 0, aboutQuiet: 0, duration: TRANSITION_DURATION, ease: 'sine.inOut' }, returnAt)
+    travel.to(worldState, { ...target, ...INTRO_ROTATION, cubeX: 0, aboutFocus: 0, particleRush: 0, duration: TRANSITION_DURATION, ease: 'sine.inOut' })
   }
   keepSceneMoving(travel.duration() + 2)
 }
@@ -101,7 +97,7 @@ export const syncCameraToLayout = (): void => {
   const state = useExperience.getState()
   // Startup navigation is resumed when the scene is ready, from its visible origin.
   if (!state.isCubeReady) {
-    Object.assign(worldState, introComposition(state.isMobile), { cubeX: 0, particleRush: 0, aboutQuiet: 0 })
+    Object.assign(worldState, introComposition(state.isMobile), { cubeX: 0, particleRush: 0, aboutFocus: 0 })
     return
   }
   if (state.currentPhase > 1) return
@@ -111,12 +107,7 @@ export const syncCameraToLayout = (): void => {
   if (blackoutElement) {
     killCameraTween()
     Object.assign(worldState, {
-      cameraX: 0,
-      cameraY: target.y,
-      cameraZ: target.z,
-      targetX: target.targetX,
-      targetY: target.targetY,
-      targetZ: target.targetZ,
+      ...target,
     })
     return
   }
@@ -130,13 +121,8 @@ export const syncCameraToLayout = (): void => {
 
   keepSceneMoving(2)
   const tween = gsap.to(worldState, {
-    cameraX: 0,
-    cameraY: target.y,
-    cameraZ: target.z,
-    targetX: target.targetX,
-    targetY: target.targetY,
-    targetZ: target.targetZ,
-    cubeX: state.currentPhase === 1 ? aboutCubeX(state.isMobile) : 0,
+    ...target,
+    cubeX: 0,
     duration: duration(0.65),
     ease: 'power3.inOut',
     onComplete: () => {
@@ -166,16 +152,11 @@ const resetToLanding = () => {
   state.setMode(MODES.LANDING)
 
   Object.assign(worldState, {
-    cameraX: 0,
-    cameraY: landing.y,
-    cameraZ: landing.z,
-    targetX: landing.targetX,
-    targetY: landing.targetY,
-    targetZ: landing.targetZ,
+    ...landing,
     ...INTRO_ROTATION,
     cubeX: 0,
     particleRush: 0,
-    aboutQuiet: 0,
+    aboutFocus: 0,
   })
 }
 

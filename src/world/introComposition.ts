@@ -1,4 +1,4 @@
-// Intro and the interior crossing share the origin; About temporarily clears the cube aside.
+// The cube stays at the origin; About visits the particle source to its left.
 export const INTRO_ROTATION = { cubeRotX: -.12, cubeRotY: -.85, cubeRotZ: -.17 }
 
 export function introComposition(mobile: boolean) {

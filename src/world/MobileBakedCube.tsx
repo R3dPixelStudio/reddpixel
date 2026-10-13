@@ -278,8 +278,10 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
 const MobileBakedCube: React.FC = () => {
   const currentPhase = useExperience((state) => state.currentPhase)
   const mode = useExperience((state) => state.mode)
+  const transitioning = useExperience((state) => state.isTransitioning)
   const hasCompletedInteriorEntry = currentPhase === 2 && mode === MODES.EXPLORE
-  const isActive = !hasCompletedInteriorEntry && (currentPhase < 3 || mode !== MODES.EXPLORE)
+  const readingAbout = currentPhase === 1 && mode === MODES.EXPLORE && !transitioning
+  const isActive = !readingAbout && !hasCompletedInteriorEntry && (currentPhase < 3 || mode !== MODES.EXPLORE)
 
   // Pass the mode down to our active component so it knows when to tilt!
   return <ActiveMobileBakedCube currentPhase={currentPhase} isActive={isActive} />

@@ -19,7 +19,7 @@ const TimelineBridge: React.FC = () => {
       }
     }
 
-    const pointerActive = currentPhase <= 1 && !isMobile && !reducedMotion && !isTransitioning && !cubeInteraction.dragging
+    const pointerActive = currentPhase === 0 && !isMobile && !reducedMotion && !isTransitioning && !cubeInteraction.dragging
     parallax.current.x = MathUtils.damp(parallax.current.x, pointerActive ? state.pointer.x * .28 : 0, 3.08, Math.min(delta, .1))
     parallax.current.y = MathUtils.damp(parallax.current.y, pointerActive ? state.pointer.y * .16 : 0, 3.08, Math.min(delta, .1))
     // GSAP already eases the camera. Damping it again left a stale position when idle frames stopped.
