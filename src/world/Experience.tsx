@@ -6,7 +6,7 @@ import GlassShell from './GlassShell'
 import InnerWorldEnvironment from './InnerWorldEnvironment'
 import GemAura from './GemAura'
 import IntroStage from './IntroStage'
-import GroundReflection from './GroundReflection'
+import ConcreteFloor from './ConcreteFloor'
 import CubeLighting from './CubeLighting'
 import { useCubeInteraction } from './useCubeInteraction'
 
@@ -58,7 +58,7 @@ const Scene: React.FC = () => {
       <IntroStage />
       <GlassShell />
       <InnerWorldEnvironment />
-      <GroundReflection />
+      <ConcreteFloor />
       {!isCubeReady && <SceneCompiler />}
     </>
   )

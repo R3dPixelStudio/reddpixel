@@ -7,7 +7,6 @@ import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 import { cubeInteraction } from './cubeInteraction'
 import GoldFrame from './GoldFrame'
-import CubeReflection from './CubeReflection'
 
 const CUBE_HALF = 1.0
 
@@ -190,7 +189,6 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
         onPointerOver={() => { if (!presentation && currentPhase === 0) document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { document.body.style.cursor = 'auto' }}
       ><GoldFrame /></mesh>
-      {!presentation && <CubeReflection geometry={geometry} sourceMaterial={material} />}
     </>
       
   )

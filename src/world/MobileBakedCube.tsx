@@ -7,8 +7,7 @@ import {
   RGBAFormat,
   UnsignedByteType,
   type Mesh,
-  MeshPhysicalMaterial,
-  BoxGeometry,
+  type MeshPhysicalMaterial,
 } from 'three'
 import { MODES, useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
@@ -16,7 +15,6 @@ import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 import { cubeInteraction } from './cubeInteraction'
 import GoldFrame from './GoldFrame'
-import CubeReflection from './CubeReflection'
 
 const CUBE_SIZE = 2
 const MOBILE_TRANSMISSION_SAMPLES = 4
@@ -180,13 +178,6 @@ interface ActiveMobileBakedCubeProps {
 const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPhase, isActive }) => {
   const shellRef = useRef<Mesh>(null)
   const materialRef = useRef<DreiTransmissionRef>(null)
-  const [reflectionSource] = useState(() => {
-    const material = new MeshPhysicalMaterial({ transmission: 0, roughness: .2, metalness: .06, side: FrontSide })
-    material.onBeforeCompile = shader => injectMobileOrosi(shader)
-    material.customProgramCacheKey = () => MOBILE_OROSI_CACHE_KEY + '-reflection-source'
-    return { material, geometry: new BoxGeometry(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE) }
-  })
-  useEffect(() => () => { reflectionSource.material.dispose(); reflectionSource.geometry.dispose() }, [reflectionSource])
   
   const [hovered, setHovered] = useState(false)
   const [inertBuffer] = useState(() => {
@@ -280,7 +271,6 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
         toneMapped
       />
     </mesh>
-    <CubeReflection geometry={reflectionSource.geometry} sourceMaterial={reflectionSource.material} />
     </>
   )
 }
