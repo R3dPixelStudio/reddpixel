@@ -23,13 +23,13 @@ Review changes before committing. Local secrets, CMS state, build output, depend
 
 ## Cloudflare configuration
 
-`wrangler.jsonc` currently supplies **local** D1/R2 bindings. Its `local-reddpixel-cms` ID is not a live database. The file deliberately omits `pages_build_output_dir`, leaving the existing Pages project's deployment configuration in the dashboard. Local preview commands pass `dist` explicitly.
+`wrangler.jsonc` currently supplies a **local** D1 binding. Its `local-reddpixel-cms` ID is not a live database. The file deliberately omits `pages_build_output_dir`, leaving the existing Pages project's deployment configuration in the dashboard. Local preview commands pass `dist` explicitly.
 
 Do not add `pages_build_output_dir` while the file still contains local placeholders. That key opts Pages into using the Wrangler file as deployment configuration. [Cloudflare's configuration guidance](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
 Before switching to configuration in source control, back up the local file, sign in with Wrangler, download the existing project's configuration, and review all production/preview bindings and variables. Preserve the original local database ID if you need to keep using its local data. Secrets remain in Cloudflare, never in Git.
 
-Required CMS setup: a migrated D1 database bound as `CMS_DB`, an R2 bucket bound as `CMS_MEDIA`, and the owner-selected `ADMIN_PASSWORD_HASH` secret. Configure preview separately from production when possible. Public repository articles and work remain readable without CMS bindings; admin editing, uploads and comments require them.
+Required CMS setup: a migrated D1 database bound as `CMS_DB` and the owner-selected `ADMIN_PASSWORD_HASH` secret. New uploads use D1; an R2 bucket or `CMS_MEDIA` binding is not required. Configure preview separately from production when possible. Public repository articles and work remain readable without CMS bindings; admin editing, uploads and comments require them.
 
 ## Before pushing code changes
 
