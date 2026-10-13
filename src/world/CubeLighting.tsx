@@ -1,20 +1,25 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Environment, Lightformer } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { AmbientLight, DirectionalLight, MathUtils } from 'three'
 import { useExperience } from '../stores/useExperience'
+import { REFLECTION_LAYER, outerSceneVisibility } from './outerScene'
 
 export default function CubeLighting() {
   const conservative = useExperience(state => state.isMobile || state.isLowEnd)
   const ambient = useRef<AmbientLight>(null)
   const key = useRef<DirectionalLight>(null)
-  useFrame(({ scene }, delta) => {
+  useLayoutEffect(() => {
+    ambient.current?.layers.enable(REFLECTION_LAYER)
+    key.current?.layers.enable(REFLECTION_LAYER)
+  }, [])
+  useFrame(({ scene, camera }, delta) => {
     const state = useExperience.getState()
-    const intro = state.currentPhase === 0
+    const exterior = outerSceneVisibility(camera.position.z)
     const blend = state.reducedMotion ? 1 : 1 - Math.exp(-3 * Math.min(delta, .1))
-    if (ambient.current) ambient.current.intensity = MathUtils.lerp(ambient.current.intensity, intro ? .8 : conservative ? 3.8 : 8.4, blend)
-    if (key.current) key.current.intensity = MathUtils.lerp(key.current.intensity, intro ? (conservative ? 4.5 : 7) : conservative ? 3.8 : 5.5, blend)
-    scene.environmentIntensity = MathUtils.lerp(scene.environmentIntensity, intro ? .9 : .3, blend)
+    if (ambient.current) ambient.current.intensity = MathUtils.lerp(ambient.current.intensity, MathUtils.lerp(conservative ? 3.8 : 8.4, .8, exterior), blend)
+    if (key.current) key.current.intensity = MathUtils.lerp(key.current.intensity, MathUtils.lerp(conservative ? 3.8 : 5.5, conservative ? 4.5 : 7, exterior), blend)
+    scene.environmentIntensity = MathUtils.lerp(scene.environmentIntensity, MathUtils.lerp(.3, .9, exterior), blend)
   })
   return <>
     <ambientLight ref={ambient} intensity={.8} />

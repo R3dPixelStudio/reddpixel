@@ -41,14 +41,14 @@ export const renderPortfolio = (categories = SHOWCASES) => `<details id="portfol
   <summary>Readable portfolio · Open / Close</summary>
   <main class="portfolio-document" aria-label="REDDPIXEL portfolio">
     <header>
-      <small>ARASH MOHAMMADI / DIGITAL + PHYSICAL SYSTEMS</small>
+      <small>REDDPIXEL / DIGITAL + PHYSICAL SYSTEMS</small>
       <h1>${escape(PROFILE.brand)}</h1>
       <p>${escape(PROFILE.landingTitle)}</p>
       <p>${escape(PROFILE.introduction)}</p>
       <nav aria-label="Portfolio sections"><a href="#portfolio-about">About</a><a href="#portfolio-work">Work</a><a href="#portfolio-contact">Contact</a><a href="/blog/">Blog / Field notes</a></nav>
     </header>
     <section id="portfolio-about" aria-labelledby="portfolio-about-title">
-      <img class="portfolio-portrait" src="${PROFILE.portrait}" alt="Arash Mohammadi" width="640" height="853" loading="lazy" decoding="async">
+      <img class="portfolio-portrait" src="${PROFILE.portrait}" alt="The creator behind REDDPIXEL" width="640" height="853" loading="lazy" decoding="async">
       <h2 id="portfolio-about-title">${escape(PROFILE.title)}</h2>
       <p>${escape(PROFILE.statement)}</p>
       <p>${escape(PROFILE.introduction)} Hands-on networking, RF and electrical work add a physical dimension to the practice.</p>
@@ -70,7 +70,7 @@ export const renderPortfolio = (categories = SHOWCASES) => `<details id="portfol
       </article>`).join('')}</div></details>`).join('')}
     </section>
     <section id="portfolio-contact" aria-labelledby="portfolio-contact-title">
-      <h2 id="portfolio-contact-title">Start a project with Arash</h2>
+      <h2 id="portfolio-contact-title">Start a project with REDDPIXEL</h2>
       <p>${escape(PROFILE.availability)}</p>
       <div class="portfolio-contact">${CONTACT_LINKS.map((link) => `<a href="${escape(link.href)}">${escape(link.action)} / ${escape(link.label)}</a>`).join('')}</div>
       <p><a href="mailto:${PROFILE.email}">${PROFILE.email}</a></p>

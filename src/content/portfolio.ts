@@ -28,7 +28,7 @@ export interface ShowcaseCategory {
 
 export const PROFILE = {
   brand: 'REDDPIXEL',
-  name: 'Arash Mohammadi',
+  name: 'REDDPIXEL',
   title: 'Creative Developer & Technical Maker',
   landingTitle: 'Creative Developer / 3D Web',
   statement: 'I BUILD DIGITAL AND PHYSICAL SYSTEMS',
@@ -42,7 +42,7 @@ export const PROFILE = {
   email: 'arashmohammadi9775@gmail.com',
   linkedin: 'https://www.linkedin.com/in/arash-mohammadi-26454b197',
   telegram: 'https://t.me/ReddPixel',
-  pricing: 'Pricing depends on scope. Contact Arash to discuss requirements, schedule and deliverables.',
+  pricing: 'Pricing depends on scope. Get in touch to discuss requirements, schedule and deliverables.',
 }
 
 export const EXPERIENCES = [
@@ -145,9 +145,9 @@ export const SHOWCASES: ShowcaseCategory[] = [
 ]
 
 export const CONTACT_LINKS = [
-  { label: 'EMAIL', mark: '@', markClassName: 'text-[13px]', action: 'START A PROJECT', detail: PROFILE.email, href: `mailto:${PROFILE.email}`, external: false, ariaLabel: `Start a project: email Arash at ${PROFILE.email}.` },
-  { label: 'LINKEDIN', mark: 'in', markClassName: 'text-[11px] font-black', action: 'CONNECT', detail: PROFILE.name, href: PROFILE.linkedin, external: true, ariaLabel: 'Connect with Arash on LinkedIn. Opens in a new tab.' },
-  { label: 'TELEGRAM', mark: '➤', markClassName: '-rotate-[18deg] text-[13px]', action: 'MESSAGE', detail: '@ReddPixel', href: PROFILE.telegram, external: true, ariaLabel: 'Message Arash on Telegram. Opens in a new tab.' },
+  { label: 'EMAIL', mark: '@', markClassName: 'text-[13px]', action: 'START A PROJECT', detail: PROFILE.email, href: `mailto:${PROFILE.email}`, external: false, ariaLabel: `Start a project: email REDDPIXEL at ${PROFILE.email}.` },
+  { label: 'LINKEDIN', mark: 'in', markClassName: 'text-[11px] font-black', action: 'CONNECT', detail: 'Professional profile', href: PROFILE.linkedin, external: true, ariaLabel: 'Connect on LinkedIn. Opens in a new tab.' },
+  { label: 'TELEGRAM', mark: '➤', markClassName: '-rotate-[18deg] text-[13px]', action: 'MESSAGE', detail: '@ReddPixel', href: PROFILE.telegram, external: true, ariaLabel: 'Message REDDPIXEL on Telegram. Opens in a new tab.' },
   ...(PROFILE.instagram ? [{ label: 'INSTAGRAM', mark: '↗', markClassName: '', action: 'FOLLOW', detail: `@${PROFILE.mediaIdentity}`, href: PROFILE.instagram, external: true, ariaLabel: 'Superintelliget on Instagram. Opens in a new tab.' }] : []),
   ...(PROFILE.youtube ? [{ label: 'YOUTUBE', mark: '▶', markClassName: '', action: 'WATCH', detail: 'YouTube', href: PROFILE.youtube, external: true, ariaLabel: 'YouTube channel. Opens in a new tab.' }] : []),
 ]
@@ -155,7 +155,7 @@ export const CONTACT_LINKS = [
 export const SEO = {
   url: 'https://reddpixel.com/',
   title: 'REDDPIXEL — Creative Developer & 3D Web Experiences',
-  description: "Arash Mohammadi's portfolio of interactive websites, Three.js/WebGL experiences, 3D visualization and visual digital work. Discuss remote projects worldwide.",
+  description: "REDDPIXEL's portfolio of interactive websites, Three.js/WebGL experiences, 3D visualization and visual digital work. Discuss remote projects worldwide.",
   image: 'https://reddpixel.com/images/social-preview.jpg',
   imageAlt: 'Procedural 3D artwork from the REDDPIXEL portfolio',
 }

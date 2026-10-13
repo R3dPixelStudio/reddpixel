@@ -38,18 +38,18 @@ try {
   const reset = (mobile = false, reducedMotion = false) => {
     cleanup()
     store.setState({ currentPhase: 0, mode: MODES.LANDING, isTransitioning: false, isCubeReady: false, isMobile: mobile, reducedMotion })
-    Object.assign(world, { cameraX: 0, cameraY: mobile ? 1.4 : 1.15, cameraZ: mobile ? 8.4 : 5.7, targetX: mobile ? .85 : 1.8, targetY: mobile ? -.8 : -.2, targetZ: 0, cubeRotX: -.12, cubeRotY: -.85, cubeRotZ: -.17 })
+    Object.assign(world, { cameraX: 0, cameraY: mobile ? 1.4 : 1.15, cameraZ: mobile ? 8.4 : 5.7, targetX: mobile ? .85 : 1.8, targetY: mobile ? -.8 : -.48, targetZ: 0, cubeX:0, particleRush:0, aboutQuiet:0, cubeRotX: -.12, cubeRotY: -.85, cubeRotZ: -.17 })
   }
   const finishCamera = () => {
-    // Camera completion may start About's separate explore rotation.
-    for (let pass = 0; pass < 3; pass++) for (const tween of gsap.getTweensOf(world)) tween.progress(1)
+    const roots = new Set(gsap.getTweensOf(world).map(tween => tween.parent === gsap.globalTimeline ? tween : tween.parent))
+    for (const animation of roots) animation.progress(1)
   }
   const assertDestination = (phase, mobile = false) => {
     assert.equal(store.getState().currentPhase, phase)
     assert.equal(store.getState().isTransitioning, false, 'Traversal buttons must unlock')
     assert.equal(store.getState().mode, phase ? MODES.EXPLORE : MODES.LANDING, 'The destination UI must open')
-    assert.equal(world.cameraZ, [mobile ? 8.4 : 5.7, mobile ? 8 : 4.5, -4, -8][phase])
-    assert.equal(world.targetX, phase === 0 ? (mobile ? .85 : 1.8) : phase === 1 ? 1.5 : 0)
+    assert.equal(world.cameraZ, [mobile ? 8.4 : 5.7, mobile ? 6.6 : 4.4, -4, -8][phase])
+    assert.equal(world.targetX, phase === 0 ? (mobile ? .85 : 1.8) : 0)
     if (phase === 0) {
       assert.equal(world.cubeRotX, -.12)
       assert.equal(world.cubeRotY, -.85, 'Returning to Intro must restore the composed orientation')
@@ -71,6 +71,24 @@ try {
     controller.resumePendingPhase()
     finishCamera()
     assertDestination(phase, mobile)
+  }
+
+  for (const mobile of [false, true]) {
+    reset(mobile)
+    store.getState().setCubeReady()
+    const startZ = world.cameraZ
+    controller.jumpToPhase(1)
+    const cameraTween = gsap.getTweensOf(world)[0].parent
+    let previousZ = startZ
+    for (let step = 1; step <= 20; step++) {
+      cameraTween.progress(step / 20)
+      assert.ok(world.cameraZ < previousZ, 'Intro to About must advance continuously')
+      previousZ = world.cameraZ
+    }
+    assert.equal(world.cubeX, mobile ? -7 : -9, 'The cube must clear the reading surface before About opens')
+    assert.equal(world.particleRush, 0)
+    assert.equal(world.aboutQuiet, 1)
+    assert.equal(gsap.getTweensOf(world).length, 0, 'About must not launch a second movement after arrival')
   }
 
   reset()

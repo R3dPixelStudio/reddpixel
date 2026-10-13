@@ -10,8 +10,14 @@ interface WorldState {
     cubeRotX: number;
     cubeRotY: number;
     cubeRotZ: number;
+    cubeX: number;
+    particleRush: number;
+    aboutQuiet: number;
   }
   
   export const worldState: WorldState = {
     ...introComposition(typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches),
+    cubeX: 0,
+    particleRush: 0,
+    aboutQuiet: 0,
   }

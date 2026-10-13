@@ -5,6 +5,7 @@ import { useExperience, MODES } from '../../stores/useExperience'
 
 import { CONTACT_LINKS, PROFILE } from '../../content/portfolio'
 import Signature from '../art/Signature'
+import { detectOracleLanguage } from '../../content/oracleLanguage'
 import LineIcon from '../art/LineIcon'
 
 function DirectLinks() {
@@ -39,57 +40,22 @@ const MESSAGE_LIMIT = 500
 const INITIAL_MESSAGE: Message = {
   id: 0,
   sender: 'ai',
-  text: "Hey, welcome to Arash's little corner of the web. Have an idea you want to build, or just curious how this cube works? I'm listening.",
-}
-
-const isPersian = (text: string) => /[\u0600-\u06ff]/u.test(text)
-const GERMAN_MARKERS = new Set([
-  'arbeit',
-  'arbeitet',
-  'beruf',
-  'bitte',
-  'deutsch',
-  'erfahrung',
-  'fähigkeiten',
-  'guten',
-  'hallo',
-  'kenntnisse',
-  'kontakt',
-  'können',
-  'kannst',
-  'nutzt',
-  'projekt',
-  'projekte',
-  'seine',
-  'sprachen',
-  'spricht',
-  'technologien',
-  'verfügbar',
-  'welche',
-  'welcher',
-  'welches',
-  'warum',
-  'womit',
-])
-
-const isGerman = (text: string) => {
-  if (/[äöüß]/iu.test(text)) return true
-  const words = text.toLocaleLowerCase('de-DE').match(/\p{L}+/gu) ?? []
-  return words.some((word) => GERMAN_MARKERS.has(word))
+  text: "Hey, welcome to REDDPIXEL. Have an idea you want to build, or just curious how this cube works? I'm listening.",
 }
 
 const getLocalizedError = (code: string, userMessage: string, retryAfter?: number) => {
   const seconds = Math.max(1, Math.ceil(retryAfter ?? 10))
   const isBusy = code === 'RATE_LIMITED' || code === 'PROVIDER_BUSY'
+  const language = detectOracleLanguage(userMessage)
 
-  if (isPersian(userMessage)) {
+  if (language === 'fa') {
     if (isBusy) return `اوراکل کمی شلوغ است. لطفاً ${seconds} ثانیه دیگر دوباره تلاش کنید.`
     if (code === 'OFFLINE') return 'اتصال اینترنت برقرار نیست. پس از اتصال دوباره پیام را ارسال کنید.'
     if (code === 'TIMEOUT') return 'پاسخ اوراکل بیش از حد طول کشید. لطفاً دوباره تلاش کنید.'
     return 'ارتباط اوراکل موقتاً قطع شد. لطفاً چند لحظه دیگر دوباره تلاش کنید.'
   }
 
-  if (isGerman(userMessage)) {
+  if (language === 'de') {
     if (isBusy) return `Das Orakel ist gerade beschäftigt. Bitte versuche es in ${seconds} Sekunden erneut.`
     if (code === 'OFFLINE') return 'Du bist offline. Stelle die Verbindung wieder her und sende die Nachricht erneut.'
     if (code === 'TIMEOUT') return 'Die Antwort des Orakels hat zu lange gedauert. Bitte versuche es erneut.'
@@ -99,7 +65,7 @@ const getLocalizedError = (code: string, userMessage: string, retryAfter?: numbe
   if (isBusy) return `The Oracle is handling several inquiries. Please try again in ${seconds} seconds.`
   if (code === 'OFFLINE') return 'You appear to be offline. Reconnect and send the message again.'
   if (code === 'TIMEOUT') return 'The Oracle took too long to answer. Please try again.'
-  return 'I can’t reach the AI service right now. Try again shortly, or use the direct contact links to reach Arash.'
+  return 'I can’t reach the AI service right now. Try again shortly, or use the direct contact links to get in touch.'
 }
 
 const parsePayload = (rawText: string): ChatApiPayload | null => {
@@ -149,6 +115,7 @@ const ContactPhaseUI: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const activeRequestRef = useRef<AbortController | null>(null)
   const requestTimeoutRef = useRef<number | null>(null)
@@ -274,6 +241,7 @@ const ContactPhaseUI: React.FC = () => {
       },
     ])
     setInput('')
+    inputRef.current?.focus({ preventScroll: true })
 
     if (!navigator.onLine) {
       appendOracleMessage(getLocalizedError('OFFLINE', userText), true)
@@ -346,7 +314,7 @@ const ContactPhaseUI: React.FC = () => {
   }
 
   return <section ref={containerRef} data-active={isExplore} aria-label="Chat and contact" aria-hidden={!isExplore} inert={!isExplore} className="oracle-contact-shell phase-panel invisible">
-    <aside className="contact-direct"><div className="direct-heading"><Signature /><div><p className="eyebrow">DIRECT / HUMAN</p><h2>Connect with Arash.</h2></div></div><DirectLinks /></aside>
+    <aside className="contact-direct"><div className="direct-heading"><Signature /><div><p className="eyebrow">DIRECT / HUMAN</p><h2>Connect with REDDPIXEL.</h2></div></div><DirectLinks /></aside>
     <div className="oracle-minimal-card">
       <header className="oracle-header"><div><p className="eyebrow">REDDPIXEL / AI GUIDE</p><h2>The Oracle<span aria-hidden="true"> ✦</span></h2><p>Talk ideas. Ask about the work.</p></div></header>
       <div className="oracle-conversation" role="log" aria-live="polite" aria-relevant="additions" aria-busy={isTyping}>
@@ -357,13 +325,13 @@ const ContactPhaseUI: React.FC = () => {
         {isTyping && <div role="status" className="oracle-composing">Thinking<span aria-hidden="true"> · · ·</span></div>}
         <div ref={messagesEndRef} />
       </div>
-      {messages.length === 1 && <div className="oracle-suggestions">{['What can Arash build?', 'Tell me about the visuals'].map((question) => <button key={question} type="button" onClick={() => { setInput(question); document.getElementById('oracle-message')?.focus() }}>{question}</button>)}</div>}
+      {messages.length === 1 && <div className="oracle-suggestions">{['What can REDDPIXEL build?', 'Tell me about the visuals'].map((question) => <button key={question} type="button" onClick={() => { setInput(question); document.getElementById('oracle-message')?.focus() }}>{question}</button>)}</div>}
       <form onSubmit={handleSend} className="oracle-compose">
         <label htmlFor="oracle-message" className="sr-only">Message the Oracle</label>
-        <input id="oracle-message" type="text" dir="auto" value={input} maxLength={MESSAGE_LIMIT} disabled={!isExplore || isTyping} onChange={(event) => setInput(event.target.value)} onFocus={handleInputFocus} placeholder="Ask me something…" autoComplete="off" />
+        <input ref={inputRef} id="oracle-message" type="text" dir="auto" value={input} maxLength={MESSAGE_LIMIT} disabled={!isExplore} onChange={(event) => setInput(event.target.value)} onFocus={handleInputFocus} placeholder="Ask me something…" autoComplete="off" />
         <button type="submit" aria-label="Send message" disabled={!isExplore || !input.trim() || isTyping}>↑</button>
       </form>
-      <p className="oracle-privacy">AI guide, not Arash. Replies via Groq · Please keep sensitive details out.</p>
+      <p className="oracle-privacy">AI guide for REDDPIXEL. Replies via Groq · Please keep sensitive details out.</p>
     </div>
   </section>
 }

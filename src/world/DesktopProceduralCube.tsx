@@ -1,11 +1,13 @@
 import React, { useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { BoxGeometry, MeshPhysicalMaterial, DoubleSide, MeshDepthMaterial, RGBADepthPacking, type Mesh } from 'three'
+import { BoxGeometry, MeshPhysicalMaterial, DoubleSide, MeshDepthMaterial, RGBADepthPacking, ShaderChunk, type Mesh } from 'three'
 import { useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 import { cubeInteraction } from './cubeInteraction'
+import GoldFrame from './GoldFrame'
+import CubeReflection from './CubeReflection'
 
 const CUBE_HALF = 1.0
 
@@ -73,7 +75,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
             // full color spectrum
             float shardSeed = fract(sin(dot(closestCell, vec2(12.9898, 78.233))) * 4375.85453);
             
-            vec3 calculatedTilt = vec3((f - closestCenter) * smoothstep(0.2, 0.0, edgeDist) * 1.5 * mix(1.0, 2.5, step(radius, 0.15)), 0.0);
+            vec3 calculatedTilt = vec3((f - closestCenter) * (1.0 - smoothstep(0.0, 0.2, edgeDist)) * 1.5 * mix(1.0, 2.5, step(radius, 0.15)), 0.0);
             
             // The colors 
             vec3 gColor = 
@@ -90,7 +92,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
             
             
             float uvEdge = min(min(currentUv.x, 1.0 - currentUv.x), min(currentUv.y, 1.0 - currentUv.y));
-            float customLead = max(smoothstep(0.03, 0.0, edgeDist), smoothstep(0.01, 0.00, uvEdge));
+            float customLead = max(1.0 - smoothstep(0.0, max(0.018, fwidth(edgeDist)), edgeDist), 1.0 - smoothstep(0.0, max(0.006, fwidth(uvEdge)), uvEdge));
             
             return Vitrail(gColor * 1.28, customLead, calculatedTilt);
          }
@@ -99,13 +101,14 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
 
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>\n if (orosi.lead < 0.5) normal = normalize(normal + orosi.normalTilt);`)
-        .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb = mix(orosi.color, vec3(0.16, 0.11, 0.075), orosi.lead);`)
+        .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb = mix(orosi.color, vec3(0.58, 0.34, 0.10), orosi.lead);`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n roughnessFactor = mix(0.045, 0.28, orosi.lead);`)
+        .replace('#include <transmission_fragment>', ShaderChunk.transmission_fragment.replace('material.transmission = transmission;', 'material.transmission = transmission * (1.0 - orosi.lead);'))
         .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n metalnessFactor = mix(0.1, 1.0, orosi.lead);`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n if (!gl_FrontFacing) { vec3 coreLight = vec3(0.55, 0.48, 0.42); totalEmissiveRadiance += coreLight * orosi.color * (1.0 - orosi.lead); }`)
     }
     
-    mat.customProgramCacheKey = () => 'vitrail_procedural_v5_studio'
+    mat.customProgramCacheKey = () => 'vitrail_procedural_v6_gold'
 
     const depthMat = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, side: DoubleSide })
     depthMat.onBeforeCompile = (shader) => {
@@ -144,12 +147,12 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
             }
             
             float uvEdge = min(min(vMyUv.x, 1.0 - vMyUv.x), min(vMyUv.y, 1.0 - vMyUv.y));
-            float customLead = max(smoothstep(0.03, 0.0, edgeDist), smoothstep(0.01, 0.0, uvEdge));
+            float customLead = max(1.0 - smoothstep(0.0, max(0.018, fwidth(edgeDist)), edgeDist), 1.0 - smoothstep(0.0, max(0.006, fwidth(uvEdge)), uvEdge));
             if (customLead < 0.5) discard;
       `)
     }
     
-    depthMat.customProgramCacheKey = () => 'vitrail_procedural_v3_depth'
+    depthMat.customProgramCacheKey = () => 'vitrail_procedural_v4_gold_depth'
     return { geometry: geo, material: mat, depthMaterial: depthMat }
   }, [])
 
@@ -168,9 +171,9 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
       shellRef.current.rotation.set(.35 + Math.sin(t * .15) * .12, .6 + t * .12, .12)
       return
     }
-    if (currentPhase >= 3) return;
-
     if (shellRef.current) {
+      shellRef.current.position.x = worldState.cubeX
+      shellRef.current.visible = worldState.cameraZ > -3
       shellRef.current.rotation.x = worldState.cubeRotX + cubeInteraction.rotationX
       shellRef.current.rotation.y = worldState.cubeRotY + cubeInteraction.rotationY
       shellRef.current.rotation.z = worldState.cubeRotZ
@@ -178,6 +181,7 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
   })
 
   return (
+    <>
       <mesh 
         ref={shellRef}
         geometry={geometry} material={material} customDepthMaterial={depthMaterial} castShadow 
@@ -185,7 +189,9 @@ const DesktopProceduralCube: React.FC<Props> = ({ shellRef, presentation = false
         onPointerDown={presentation ? undefined : onPointerDown}
         onPointerOver={() => { if (!presentation && currentPhase === 0) document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { document.body.style.cursor = 'auto' }}
-      />
+      ><GoldFrame /></mesh>
+      {!presentation && <CubeReflection geometry={geometry} sourceMaterial={material} />}
+    </>
       
   )
 }
