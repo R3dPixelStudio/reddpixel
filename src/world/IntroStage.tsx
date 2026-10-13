@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Group, ShaderMaterial, type Points } from 'three'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Group, ShaderMaterial } from 'three'
 import { useExperience } from '../stores/useExperience'
-import { FLOOR_Y, REFLECTION_LAYER, outerSceneVisibility } from './outerScene'
+import { outerSceneVisibility } from './outerScene'
 import { worldState } from './worldState'
 
 const particleVertex = /* glsl */ `
@@ -86,19 +86,9 @@ export default function IntroStage() {
     return geometry;
   },[mobile,lowEnd])
   useEffect(()=>()=>geometry.dispose(),[geometry])
-  const reflectedPoints=useRef<Points>(null)
-  useLayoutEffect(()=>{
-    const points=reflectedPoints.current,material=particleMaterial.current
-    if(!points||!material)return
-    const placeholder=points.material
-    if(placeholder!==material){
-      if(Array.isArray(placeholder))placeholder.forEach(item=>item.dispose())
-      else placeholder.dispose()
-      points.material=material
-    }
-    points.layers.set(REFLECTION_LAYER)
-    points.visible=true
-    return ()=>material.dispose()
+  useEffect(()=>{
+    const material=particleMaterial.current
+    return ()=>material?.dispose()
   },[])
 
   useFrame(({clock,gl,camera},delta)=>{
@@ -119,8 +109,5 @@ export default function IntroStage() {
     <points name="exterior-particles" geometry={geometry} dispose={null} renderOrder={3} raycast={()=>null} frustumCulled={false}>
       <shaderMaterial ref={particleMaterial} vertexShader={particleVertex} fragmentShader={particleFragment} uniforms={particleUniforms} transparent depthWrite={false} blending={AdditiveBlending}/>
     </points>
-    <group position={[0,FLOOR_Y*2,0]} scale={[1,-1,1]}>
-      <points ref={reflectedPoints} name="ground-particle-reflection" visible={false} geometry={geometry} dispose={null} renderOrder={1} raycast={()=>null} frustumCulled={false}/>
-    </group>
   </group>
 }

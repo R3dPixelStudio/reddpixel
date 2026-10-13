@@ -1,18 +1,14 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { Environment, Lightformer } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { AmbientLight, DirectionalLight, MathUtils } from 'three'
 import { useExperience } from '../stores/useExperience'
-import { REFLECTION_LAYER, outerSceneVisibility } from './outerScene'
+import { outerSceneVisibility } from './outerScene'
 
 export default function CubeLighting() {
   const conservative = useExperience(state => state.isMobile || state.isLowEnd)
   const ambient = useRef<AmbientLight>(null)
   const key = useRef<DirectionalLight>(null)
-  useLayoutEffect(() => {
-    ambient.current?.layers.enable(REFLECTION_LAYER)
-    key.current?.layers.enable(REFLECTION_LAYER)
-  }, [])
   useFrame(({ scene, camera }, delta) => {
     const state = useExperience.getState()
     const exterior = outerSceneVisibility(camera.position.z)
