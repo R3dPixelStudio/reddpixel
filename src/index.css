@@ -475,3 +475,55 @@ button:disabled { cursor:default; opacity:.4; }
 @media(max-height:550px) and (min-width:768px){.intro-composition{top:37%}.intro-rule{margin:16px 0}.cube-touch-prompt{top:83%}}
 @media(max-height:650px) and (max-width:767px){.cube-touch-prompt{top:54%}}
 @media(prefers-reduced-motion:reduce){.intro-composition,.intro-explore,.intro-explore svg{transition:none}}
+
+/* The cube clears the stage before this spacious, opaque reading surface opens. */
+.about-frame{margin-inline:auto}
+.about-reading-panel{background:#10070b}
+.about-signature-switch{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:8px;border:0;background:none;color:#d79678;text-align:left}
+.about-signature-switch svg{width:88px;height:88px;overflow:visible;stroke:#b98551;stroke-width:.8;fill:none}
+.about-signature-switch>span{font:9px/1.6 monospace;letter-spacing:.07em;max-width:13ch}
+.about-signature-switch small{display:block;font:9px/1.6 monospace;color:#9e7370;letter-spacing:0;margin-top:5px}
+.signature-glass,.signature-circuit{transform-origin:60px 60px;transition:opacity .65s,transform .9s cubic-bezier(.2,.7,.2,1)}
+.signature-circuit{opacity:0;transform:scale(.75) rotate(-45deg);stroke:#db6657;stroke-width:1.2}
+.signature-glass{opacity:1}
+.about-signature-switch[data-physical=true] .signature-glass{opacity:0;transform:translate(10px,10px) rotate(45deg) scale(.7)}
+.about-signature-switch[data-physical=true] .signature-circuit{opacity:1;transform:scale(1) rotate(0)}
+.signature-outline{transform-origin:center;transition:transform .8s,stroke .4s}
+.about-signature-switch:hover .signature-outline,.about-signature-switch:focus-visible .signature-outline{transform:rotate(90deg);stroke:#ffd3a0}
+.about-details-grid{min-width:0}
+@media(min-width:768px){
+ .about-frame{width:96%;max-width:1240px;margin-inline:auto}
+ .about-reading-panel{inset:calc(4% + 10px) calc(3% + 10px) calc(3% + 27px);padding:24px 30px}
+ .about-identity{gap:24px;padding-bottom:20px;margin-bottom:24px}
+ .about-identity>div{flex:1}
+ .about-identity h2{font-size:clamp(22px,2.3vw,34px);max-width:24ch;letter-spacing:.04em}
+ .about-expertise{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+ .about-expertise article{padding-left:16px;padding-block:8px}
+ .about-expertise h3{font-size:20px}
+ .about-skills{margin:22px 0;padding-block:16px;border-block:1px solid #562629}
+ .about-skills .section-label{margin-bottom:8px}
+ .about-details-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:32px}
+ .about-records{margin-top:0;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px}
+ .certificate-record{margin-top:0}
+ .certificate-record a{font-size:13px;gap:12px;padding-block:12px}
+ .about-footer{margin-top:22px}
+}
+@media(min-width:768px) and (max-width:1000px){
+ .about-details-grid{grid-template-columns:1fr}
+ .about-identity .about-signature-switch>span{display:none}
+ .about-expertise{gap:18px}
+}
+@media(max-width:767px){
+ .about-reading-panel{padding:22px 18px}
+ .about-identity{flex-wrap:wrap;gap:14px}
+ .about-identity>div{flex:1;min-width:140px}
+ .about-identity h2{font-size:21px;line-height:1.4}
+ .about-signature-switch{width:100%;justify-content:center;border-top:1px solid #452020;padding:12px 0 0}
+ .about-signature-switch svg{width:64px;height:64px}
+ .about-signature-switch>span{max-width:none;font-size:10px}
+ .about-expertise h3{font-size:21px}
+ .about-expertise p{font-size:16px}
+ .about-records{gap:30px}
+}
+@media(max-width:380px){.about-reading-panel{padding:18px 12px}.about-identity h2{font-size:18px}.about-identity>div{min-width:110px}.about-expertise h3{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.signature-glass,.signature-circuit,.signature-outline{transition:none}}

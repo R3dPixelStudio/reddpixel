@@ -7,17 +7,20 @@ import {
   RGBAFormat,
   UnsignedByteType,
   type Mesh,
-  type MeshPhysicalMaterial,
+  MeshPhysicalMaterial,
+  BoxGeometry,
 } from 'three'
 import { MODES, useExperience } from '../stores/useExperience'
 import { goDeeper } from '../core/timeline/cinematicController'
 import { worldState } from './worldState'
 import { useCubeAdvance } from './useCubeAdvance'
 import { cubeInteraction } from './cubeInteraction'
+import GoldFrame from './GoldFrame'
+import CubeReflection from './CubeReflection'
 
 const CUBE_SIZE = 2
 const MOBILE_TRANSMISSION_SAMPLES = 4
-const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v6-studio-s${MOBILE_TRANSMISSION_SAMPLES}`
+const MOBILE_OROSI_CACHE_KEY = `mobile-orosi-transmission-v7-gold-s${MOBILE_TRANSMISSION_SAMPLES}`
 
 type DreiTransmissionRef = React.ElementRef<typeof MeshTransmissionMaterial>
 
@@ -114,12 +117,12 @@ function injectMobileOrosi(shader: CompilableShader) {
                              vec3(0.0, 0.2, 0.8);
 
       float distanceGap = max(secondDist - closestDist, 0.0);
-      float cellLead = 1.0 - smoothstep(0.0, max(0.042, fwidth(distanceGap)), distanceGap);
+      float cellLead = 1.0 - smoothstep(0.0, max(0.027, fwidth(distanceGap)), distanceGap);
       float uvEdge = min(
         min(currentUv.x, 1.0 - currentUv.x),
         min(currentUv.y, 1.0 - currentUv.y)
       );
-      float frameLead = 1.0 - smoothstep(0.0, max(0.015, fwidth(uvEdge)), uvEdge);
+      float frameLead = 1.0 - smoothstep(0.0, max(0.008, fwidth(uvEdge)), uvEdge);
       float lead = max(cellLead, frameLead);
 
       vec3 normalTilt = vec3(
@@ -145,7 +148,7 @@ function injectMobileOrosi(shader: CompilableShader) {
     .replace(
       '#include <color_fragment>',
       `#include <color_fragment>
-       diffuseColor.rgb = mix(orosi.color, vec3(0.05), orosi.lead);`
+       diffuseColor.rgb = mix(orosi.color, vec3(0.58, 0.34, 0.10), orosi.lead);`
     )
     .replace(
       '#include <roughnessmap_fragment>',
@@ -177,6 +180,13 @@ interface ActiveMobileBakedCubeProps {
 const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPhase, isActive }) => {
   const shellRef = useRef<Mesh>(null)
   const materialRef = useRef<DreiTransmissionRef>(null)
+  const [reflectionSource] = useState(() => {
+    const material = new MeshPhysicalMaterial({ transmission: 0, roughness: .2, metalness: .06, side: FrontSide })
+    material.onBeforeCompile = shader => injectMobileOrosi(shader)
+    material.customProgramCacheKey = () => MOBILE_OROSI_CACHE_KEY + '-reflection-source'
+    return { material, geometry: new BoxGeometry(CUBE_SIZE,CUBE_SIZE,CUBE_SIZE) }
+  })
+  useEffect(() => () => { reflectionSource.material.dispose(); reflectionSource.geometry.dispose() }, [reflectionSource])
   
   const [hovered, setHovered] = useState(false)
   const [inertBuffer] = useState(() => {
@@ -224,6 +234,7 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
 
   useFrame(() => {
     if (!isActive || !shellRef.current) return
+    shellRef.current.position.x = worldState.cubeX
     shellRef.current.rotation.set(
       worldState.cubeRotX + cubeInteraction.rotationX,
       worldState.cubeRotY + cubeInteraction.rotationY,
@@ -231,6 +242,7 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
     )
   })
   return (
+    <>
     <mesh
       ref={shellRef}
       visible={isActive}
@@ -241,6 +253,7 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
       }}
       onPointerOut={() => setHovered(false)}
     >
+      <GoldFrame />
       <boxGeometry args={[CUBE_SIZE, CUBE_SIZE, CUBE_SIZE]} />
 
       <MeshTransmissionMaterial
@@ -267,6 +280,8 @@ const ActiveMobileBakedCube: React.FC<ActiveMobileBakedCubeProps> = ({ currentPh
         toneMapped
       />
     </mesh>
+    <CubeReflection geometry={reflectionSource.geometry} sourceMaterial={reflectionSource.material} />
+    </>
   )
 }
 
@@ -274,7 +289,7 @@ const MobileBakedCube: React.FC = () => {
   const currentPhase = useExperience((state) => state.currentPhase)
   const mode = useExperience((state) => state.mode)
   const hasCompletedInteriorEntry = currentPhase === 2 && mode === MODES.EXPLORE
-  const isActive = !hasCompletedInteriorEntry && currentPhase < 3
+  const isActive = !hasCompletedInteriorEntry && (currentPhase < 3 || mode !== MODES.EXPLORE)
 
   // Pass the mode down to our active component so it knows when to tilt!
   return <ActiveMobileBakedCube currentPhase={currentPhase} isActive={isActive} />

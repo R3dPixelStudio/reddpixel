@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, PerspectiveCamera } from 'three'
 import { worldState } from '../../world/worldState'
-import { cubeInteraction } from '../../world/cubeInteraction'
+import { CUBE_CLEARANCE, cubeInteraction } from '../../world/cubeInteraction'
 import { useExperience } from '../../stores/useExperience'
 
 const TimelineBridge: React.FC = () => {
@@ -11,7 +11,7 @@ const TimelineBridge: React.FC = () => {
     const { currentPhase, isMobile, reducedMotion, isTransitioning } = useExperience.getState()
     const camera = state.camera
     if (camera instanceof PerspectiveCamera) {
-      const fov = currentPhase === 0 ? 38 : 45
+      const fov = worldState.cameraZ >= -CUBE_CLEARANCE ? 38 : 45
       const next = reducedMotion ? fov : MathUtils.damp(camera.fov, fov, 2, Math.min(delta, .1))
       if (Math.abs(camera.fov - fov) > .001) {
         camera.fov = Math.abs(next - fov) < .01 ? fov : next

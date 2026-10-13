@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
+import { outerSceneVisibility } from '../src/world/outerScene.ts'
 import { CUBE_CLEARANCE, innerWorldReveal, isCubeTap, neutralRotation, weightedRotation } from '../src/world/cubeInteraction.ts'
 
+for (const z of [8.4, 6.6, 5.7, 4.4]) assert.equal(outerSceneVisibility(z), 1, 'Exterior effects stay on through Intro and About')
+assert.equal(outerSceneVisibility(-4), 0)
+assert.equal(outerSceneVisibility(-CUBE_CLEARANCE), 0)
 for (const z of [14, 8, 4.5, 1, 0, -1, -Math.sqrt(3), -CUBE_CLEARANCE]) {
   assert.equal(innerWorldReveal(z), 0, `The inner world must stay hidden while any part of the cube can be ahead of the camera (z=${z})`)
 }

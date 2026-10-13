@@ -11,9 +11,9 @@ export default function LandingFooter() {
     <p className="intro-eyebrow">{PROFILE.landingTitle}</p>
     <h1>{PROFILE.brand}</h1>
     <span className="intro-rule" aria-hidden="true" />
-    <button className="intro-explore" disabled={!visible} onClick={() => jumpToPhase(2)}>
+    <button className="intro-explore" disabled={!visible} onClick={() => jumpToPhase(1)}>
       <span className="intro-signal" aria-hidden="true" />
-      <span>Explore the work</span>
+      <span>Enter the experience</span>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
     </button>
   </section>

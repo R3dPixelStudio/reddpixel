@@ -42,7 +42,7 @@ export async function onRequest(context: CmsContext): Promise<Response> {
       if (body.website) return json({ message: 'Your comment is awaiting approval.' }, 202)
       if (typeof body.slug !== 'string' || !(await posts(env)).some(p => p.slug === body.slug) || typeof body.name !== 'string' || body.name.trim().length < 2 || body.name.length > 80 || typeof body.text !== 'string' || body.text.trim().length < 2 || body.text.length > 2000) return json({ error: 'Enter a name and a comment of 2–2000 characters for a published article.' }, 400)
       await db.prepare('INSERT INTO comments (id,slug,name,text,status,created_at) VALUES (?,?,?,?,?,?)').bind(crypto.randomUUID(), body.slug, body.name.trim(), body.text.trim(), 'pending', new Date().toISOString()).run()
-      return json({ message: 'Thanks. Your comment is awaiting Arash’s approval.' }, 202)
+      return json({ message: 'Thanks. Your comment is awaiting approval.' }, 202)
     }
     if (!auth) return json({ error: 'Sign in to the content studio.' }, 401)
     if (request.method !== 'GET' && (!sameOrigin(request) || request.headers.get('X-CSRF-Token') !== auth.csrf)) return json({ error: 'Refresh the studio before saving.' }, 403)

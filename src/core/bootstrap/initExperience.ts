@@ -9,5 +9,5 @@ export const initExperience = (): void => {
   state.setMode(MODES.LANDING)
   state.setIsTransitioning(false)
 
-  Object.assign(worldState, introComposition(state.isMobile))
+  Object.assign(worldState, introComposition(state.isMobile), { cubeX: 0, particleRush: 0, aboutQuiet: 0 })
 }

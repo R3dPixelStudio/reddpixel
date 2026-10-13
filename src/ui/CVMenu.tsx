@@ -35,8 +35,8 @@ export default function CVMenu() {
     </button>
     {open && <div id="cv-options" className="cv-options">
       <button className="cv-close" type="button" aria-label="Close CV options" onClick={() => { setOpen(false); trigger.current?.focus() }}>×</button>
-      <p>ARASH / CURRICULUM VITAE</p>
-      {available ? <><a href={CV_URL} download="Arash-Mohammadi-CV.pdf" onClick={() => setOpen(false)}>Download CV <span>↓</span></a><a href={CV_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>View in browser <span>↗</span></a></> : <><button type="button" disabled>Download CV <span>↓</span></button><button type="button" disabled>View in browser <span>↗</span></button><small>PDF coming soon</small></>}
+      <p>REDDPIXEL / CURRICULUM VITAE</p>
+      {available ? <><a href={CV_URL} download="REDDPIXEL-CV.pdf" onClick={() => setOpen(false)}>Download CV <span>↓</span></a><a href={CV_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>View in browser <span>↗</span></a></> : <><button type="button" disabled>Download CV <span>↓</span></button><button type="button" disabled>View in browser <span>↗</span></button><small>PDF coming soon</small></>}
     </div>}
   </div>
 }

@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { AdditiveBlending, PlaneGeometry, ShaderMaterial, Mesh, Vector3 } from 'three'
-import gsap from 'gsap'
+import { outerSceneVisibility } from './outerScene'
+import { worldState } from './worldState'
 import { useExperience } from '../stores/useExperience'
 
 const vertexShader = /* glsl */ `
@@ -32,9 +33,9 @@ void main() {
     vec3 brightRed = vec3(0.4, 0.0, 0.05);
 
     vec3 finalColor = mix(deepRed, brightRed, haloGlow);
-    finalColor += vec3(1.0, 0.1, 0.2) * rays * coreGlow * 0.2;
+    finalColor += vec3(1.0, 0.1, 0.2) * rays * coreGlow * 0.28;
 
-    float alpha = (coreGlow * 0.22 + rays * 0.08) * uLanding;
+    float alpha = (coreGlow * 0.30 + rays * 0.10) * uLanding;
 
     gl_FragColor = vec4(finalColor, alpha);
 }
@@ -42,23 +43,7 @@ void main() {
 
 const GemAura: React.FC = () => {
   const meshRef = useRef<Mesh>(null)
-  const currentPhase = useExperience((state) => state.currentPhase)
-  const phaseDriver = useRef({ value: 1 })
   const cameraDirection = useRef(new Vector3())
-
-  useEffect(() => {
-    const driver = phaseDriver.current
-    gsap.killTweensOf(driver)
-    const tween = gsap.to(driver, {
-      value: currentPhase === 0 ? 1 : 0,
-      duration: useExperience.getState().reducedMotion ? 0.01 : 1.5,
-      ease: 'power3.inOut'
-    })
-
-    return () => {
-      tween.kill()
-    }
-  }, [currentPhase])
 
   const { geometry, material } = useMemo(() => {
     const geo = new PlaneGeometry(18, 18) 
@@ -74,20 +59,21 @@ const GemAura: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    const driver = phaseDriver.current
 
     return () => {
-      gsap.killTweensOf(driver)
       geometry.dispose()
       material.dispose()
     }
   }, [geometry, material])
 
   useFrame((state) => {
-    if (!meshRef.current || currentPhase >= 2) return
+    if (!meshRef.current) return
+    const visibility = outerSceneVisibility(state.camera.position.z)
+    meshRef.current.visible = visibility > .002
+    if (visibility <= .002) return
     const mat = meshRef.current.material as ShaderMaterial
     mat.uniforms.uTime.value = useExperience.getState().reducedMotion ? 5 : state.clock.elapsedTime
-    mat.uniforms.uLanding.value = phaseDriver.current.value
+    mat.uniforms.uLanding.value = visibility * (1 - worldState.aboutQuiet * .78)
 
     meshRef.current.quaternion.copy(state.camera.quaternion)
     cameraDirection.current.copy(state.camera.position).normalize().multiplyScalar(-4)
@@ -100,8 +86,6 @@ const GemAura: React.FC = () => {
       geometry={geometry} 
       material={material} 
       raycast={() => null} 
-      //We hide the geometry instead of destroying it!
-      visible={currentPhase < 2} 
     />
   )
 }
