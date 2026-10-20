@@ -1,7 +1,13 @@
-import { CERTIFICATES, CONTACT_LINKS, EXPERIENCES, LANGUAGES, PROFILE, SEO, SERVICES, SHOWCASES, SKILLS } from '../src/content/portfolio'
+import { CERTIFICATES, CONTACT_LINKS, EXPERIENCES, LANGUAGES, PROFILE, SEO, SERVICES, SHOWCASES, SKILLS, VISUAL_SECTIONS, type Project } from '../src/content/portfolio'
 import { IMAGE_SIZES, thumbnail } from '../src/content/imageSizes'
 
 const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!)
+
+const renderWorkProject = (project: Project) => `<article>
+  <img src="${thumbnail(project.cover)}" alt="${escape(project.coverAlt)}" ${IMAGE_SIZES[thumbnail(project.cover)] ? `width="${IMAGE_SIZES[thumbnail(project.cover)].width}" height="${IMAGE_SIZES[thumbnail(project.cover)].height}"` : ''} loading="lazy" decoding="async">
+  <h3>${escape(project.name)}</h3><p>${escape(project.desc)}</p>
+  ${project.link ? `<a href="${escape(project.link)}">View ${escape(project.name)} ↗</a>` : '<small>Explore the image sequence in the cinematic Works gallery.</small>'}
+</article>`
 
 export const portfolioCss = `
 body { margin:0; background:#050505; color:#fff; }
@@ -63,11 +69,7 @@ export const renderPortfolio = (categories = SHOWCASES) => `<details id="portfol
     </section>
     <section id="portfolio-work" aria-labelledby="portfolio-work-title">
       <h2 id="portfolio-work-title">Selected work</h2>
-      ${categories.map((category) => `<details class="portfolio-collection"><summary>${escape(category.title)}</summary><p>${escape(category.subtitle)}</p><div class="portfolio-projects">${category.projects.map((project) => `<article>
-        <img src="${thumbnail(project.cover)}" alt="${escape(project.coverAlt)}" ${IMAGE_SIZES[thumbnail(project.cover)] ? `width="${IMAGE_SIZES[thumbnail(project.cover)].width}" height="${IMAGE_SIZES[thumbnail(project.cover)].height}"` : ''} loading="lazy" decoding="async">
-        <h3>${escape(project.name)}</h3><p>${escape(project.desc)}</p>
-        ${project.link ? `<a href="${escape(project.link)}">View ${escape(project.name)} ↗</a>` : '<small>Selected visuals are also available in the cinematic Works gallery.</small>'}
-      </article>`).join('')}</div></details>`).join('')}
+      ${categories.map((category) => `<details class="portfolio-collection"><summary>${escape(category.title)}</summary><p>${escape(category.subtitle)}</p>${category.id === 'vfx' ? VISUAL_SECTIONS.map(section => `<h3>${escape(section.title)}</h3><div class="portfolio-projects">${category.projects.filter(project => (project.visualCategory ?? 'creative') === section.id).map(renderWorkProject).join('')}</div>${category.projects.some(project => (project.visualCategory ?? 'creative') === section.id) ? '' : '<p>Creative artwork and films are being prepared for this collection.</p>'}`).join('') : `<div class="portfolio-projects">${category.projects.map(renderWorkProject).join('')}</div>${category.id === 'kinetic' && !category.projects.length ? '<p>Three project films are in preparation, starting with Café Shariati. Installation footage, timelapses and finished details will be published project by project.</p>' : ''}`}</details>`).join('')}
     </section>
     <section id="portfolio-contact" aria-labelledby="portfolio-contact-title">
       <h2 id="portfolio-contact-title">Start a project with REDDPIXEL</h2>

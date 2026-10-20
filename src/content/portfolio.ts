@@ -4,6 +4,7 @@ export interface MediaItem {
   type: 'image' | 'video'
   src: string
   alt: string
+  poster?: string
 }
 
 export interface Project {
@@ -15,6 +16,7 @@ export interface Project {
   gallery: MediaItem[]
   hasLink: boolean
   link?: string
+  visualCategory?: 'architecture' | 'creative'
 }
 
 export interface ShowcaseCategory {
@@ -70,18 +72,26 @@ export const CERTIFICATES = [
   { title: 'Responsive Web Design', label: 'freecodecamp.org', href: 'https://www.freecodecamp.org/certification/rshiya/responsive-web-design' },
 ]
 
+export const VISUAL_SECTIONS = [
+  { id: 'architecture', title: 'Architectural Presentations', description: 'Spaces, atmosphere and the story of a building.' },
+  { id: 'creative', title: 'Art & Motion', description: 'Creative experiments, freelance artwork and social films.' },
+] as const
+
+const workImage = (project: string, index: number, alt: string): MediaItem => ({ type: 'image', src: `/images/work/${project}/${String(index).padStart(2, '0')}-1600.webp`, alt })
+
 export const SHOWCASES: ShowcaseCategory[] = [
   {
     id: 'web', title: 'Websites', subtitle: 'Interactive interfaces & 3D web', colorHex: '#dc2626', bgPattern: '',
     projects: [
       {
         subId: 'alphatradezone', name: 'AlphaTradeZone',
-        desc: 'A React and Tailwind frontend SPA for a trading-themed website. Reusable components, state management and data-visualization interfaces shape the experience.',
-        cover: '/images/optimized/project1-1200.webp', coverAlt: 'AlphaTradeZone landing page with trading chart graphics',
+        desc: 'A pre-release fintech website and trading dashboard. The interface moves from the public landing page into an account overview, membership and settings.',
+        cover: '/images/work/alphatradezone/01-1600.webp', coverAlt: 'AlphaTradeZone landing page with the Follow the signal headline and orbital graphic',
         gallery: [
-          { type: 'image', src: '/images/optimized/project1-1200.webp', alt: 'AlphaTradeZone website landing page' },
-          { type: 'image', src: '/images/optimized/atz-vfx-1200.webp', alt: 'AlphaTradeZone membership graphics and visual content montage' },
-        ], hasLink: true, link: 'https://rshiya.github.io/atz-land/',
+          workImage('alphatradezone', 1, 'AlphaTradeZone — public landing page and membership entry'),
+          workImage('alphatradezone', 2, 'AlphaTradeZone — account dashboard, performance chart and activity'),
+          workImage('alphatradezone', 3, 'AlphaTradeZone — account settings and preferences'),
+        ], hasLink: true, link: 'https://alphatradezonedemo.netlify.app',
       },
       {
         subId: 'Architect', name: '3D Architect',
@@ -94,53 +104,52 @@ export const SHOWCASES: ShowcaseCategory[] = [
           { type: 'image', src: '/images/optimized/architect-5-1200.webp', alt: 'Architecture portfolio contact screen' },
         ], hasLink: true, link: 'https://r3dpixelstudio.github.io/itsaboutasal/',
       },
-    ],
-  },
-  {
-    id: 'vfx', title: 'Visuals', subtitle: 'Procedural experiments, motion & VFX', colorHex: '#3b82f6', bgPattern: '',
-    projects: [
       {
-        subId: 'indiegame', name: 'Indie Protocol',
-        desc: 'A personal puzzle-game project in Unity and Houdini, with core mechanics built. Procedural generation, render-loop control and draw-call optimization are central to the work.',
-        cover: '/images/optimized/vfx-1-1200.webp', coverAlt: 'Procedural 3D illustration displayed with Indie Protocol',
+        subId: 'vfx-webfolio', name: 'VFX Artist Webfolio',
+        desc: 'A visual artist’s web portfolio with sculptural artwork, a project collection and a focused contact flow. A light editorial interface gives the visual work room to lead.',
+        cover: '/images/work/vfx-webfolio/01-1600.webp', coverAlt: 'VFX Artist Webfolio landing page with Unreal by design typography and sculptural artwork',
         gallery: [
-          { type: 'image', src: '/images/optimized/artboard2-1200.webp', alt: 'Digital design and website montage displayed with Indie Protocol' },
-          { type: 'image', src: '/images/optimized/project3-1200.webp', alt: 'Technical and creative capability illustration displayed with Indie Protocol' },
-        ], hasLink: false,
-      },
-      {
-        subId: 'logomotion', name: 'Freelance VFX',
-        desc: 'Visual content spanning logo motion, architectural renders and particle systems. Baked effects support real-time web presentation alongside video work.',
-        cover: '/images/optimized/vfx-2-1200.webp', coverAlt: 'Colorful procedural 3D artwork for visual effects work',
-        gallery: [
-          { type: 'image', src: '/images/optimized/artboard2-1200.webp', alt: 'Brand, website and architectural visualization montage' },
-          { type: 'image', src: '/images/optimized/atz-vfx-1200.webp', alt: 'Logo and promotional visual content for AlphaTradeZone' },
-        ], hasLink: false,
+          workImage('vfx-webfolio', 1, 'VFX Artist Webfolio — sculptural landing page'),
+          workImage('vfx-webfolio', 2, 'VFX Artist Webfolio — artist introduction and visual disciplines'),
+          workImage('vfx-webfolio', 3, 'VFX Artist Webfolio — selected work and project collection'),
+          workImage('vfx-webfolio', 4, 'VFX Artist Webfolio — project inquiry and contact form'),
+        ], hasLink: true, link: 'https://vfx-artist-portfolio.pages.dev/',
       },
     ],
   },
   {
-    id: 'kinetic', title: 'Technical work', subtitle: 'On-site installations & physical systems', colorHex: '#f59e0b', bgPattern: '',
+    id: 'vfx', title: 'Visuals', subtitle: 'Architectural presentations · Art & motion', colorHex: '#3b82f6', bgPattern: '',
     projects: [
       {
-        subId: 'networking', name: 'Network & RF Towers',
-        desc: 'Hands-on technical background in passive networks, structured cabling and MikroTik RouterOS equipment. Field work includes hardware troubleshooting on radio towers.',
-        cover: '/images/optimized/hva-1-1200.webp', coverAlt: 'Network and RF themed 3D illustration',
+        subId: 'jaryan', name: 'Jaryan', visualCategory: 'architecture',
+        desc: 'An architectural presentation exploring a turquoise facade, a landscaped courtyard and interior spaces, from street views to retail and cafe scenes.',
+        cover: '/images/work/jaryan/01-1600.webp', coverAlt: 'Jaryan architectural visualisation with a turquoise facade and landscaped entrance',
         gallery: [
-          { type: 'image', src: '/images/optimized/infrastructure-3-1200.webp', alt: 'On-site building cabling and installation work' },
-          { type: 'image', src: '/images/optimized/infrastructure-4-1200.webp', alt: 'Building interior during infrastructure installation' },
+          workImage('jaryan', 1, 'Jaryan — facade and entrance presentation'),
+          workImage('jaryan', 2, 'Jaryan — landscaped courtyard and water feature'),
+          workImage('jaryan', 3, 'Jaryan — interior atrium and turquoise architectural details'),
+          workImage('jaryan', 4, 'Jaryan — street-level view of the building and public space'),
+          workImage('jaryan', 5, 'Jaryan — cafe interior beneath a circular skylight'),
+          workImage('jaryan', 6, 'Jaryan — retail interior and circulation'),
         ], hasLink: false,
       },
       {
-        subId: 'electrical', name: 'Electrical Systems',
-        desc: 'Commercial and residential electrical installation work, including wire routing, circuit-load management and system setup. Physical problem-solving complements the digital practice.',
-        cover: '/images/optimized/hva-2-1200.webp', coverAlt: 'Electrical systems themed 3D illustration',
+        subId: 'hormozan-hospital', name: 'Hormozan Hospital', visualCategory: 'architecture',
+        desc: 'An architectural presentation connecting aerial and site-plan views with daylit hospital interiors, circulation and landscape.',
+        cover: '/images/work/hormozan-hospital/01-1600.webp', coverAlt: 'Aerial architectural visualisation of Hormozan Hospital and its landscaped grounds',
         gallery: [
-          { type: 'image', src: '/images/optimized/el1-1200.webp', alt: 'Electrical control panels and wire routing' },
-          { type: 'image', src: '/images/optimized/infrastructure-7-1200.webp', alt: 'Building installation work in progress' },
+          workImage('hormozan-hospital', 1, 'Hormozan Hospital — aerial campus presentation'),
+          workImage('hormozan-hospital', 2, 'Hormozan Hospital — daylit interior and landscape sequence'),
+          workImage('hormozan-hospital', 3, 'Hormozan Hospital — clinical interior and circulation'),
+          workImage('hormozan-hospital', 4, 'Hormozan Hospital — site plan and building arrangement'),
+          workImage('hormozan-hospital', 5, 'Hormozan Hospital — landscaped approach and glass facade'),
         ], hasLink: false,
       },
     ],
+  },
+  {
+    id: 'kinetic', title: 'Technical work', subtitle: 'Project films & on-site installation stories', colorHex: '#f59e0b', bgPattern: '',
+    projects: [],
   },
 ]
 

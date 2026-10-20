@@ -168,6 +168,7 @@ Commit `package.json` and `package-lock.json` together after dependency changes.
 
 - [Implementation notes](docs/IMPLEMENTATION.md) — scene, UI and navigation decisions.
 - [Content Studio](docs/CMS.md) — editing, uploads, moderation and authentication.
+- [Work content guide](docs/WORK-CONTENT.md) — final galleries, visual disciplines and the three technical project drafts.
 - [Deployment](docs/DEPLOYMENT.md) — preview and production workflow.
 - [SEO checklist](docs/SEO-CHECKLIST.md) — indexing and original-content tasks.
 - [Promotion routine](docs/PROMOTION.md) — a practical publishing schedule.

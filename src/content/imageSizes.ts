@@ -1,4 +1,7 @@
+import { WORK_MEDIA_SIZES } from './workMediaSizes'
+
 export const IMAGE_SIZES: Record<string, { width: number; height: number }> = {
+  ...WORK_MEDIA_SIZES,
   "/images/optimized/profile-320.webp": {
     "width": 320,
     "height": 427
@@ -145,4 +148,4 @@ export const IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   }
 }
 
-export const thumbnail = (src: string) => src.replace('-1200.webp', '-640.webp')
+export const thumbnail = (src: string) => src.replace(/-(?:1200|1600)\.webp$/, '-640.webp')
