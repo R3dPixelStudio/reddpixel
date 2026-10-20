@@ -1,5 +1,5 @@
 import { JOURNAL_POSTS } from '../src/content/journal'
-import { baseWorks, type CmsPost, type CmsWork } from '../src/content/cms'
+import { mergeStoredWorks, type CmsPost, type CmsWork } from '../src/content/cms'
 
 export interface Statement { bind(...values: unknown[]): Statement; all<T>(): Promise<{ results: T[] }>; first<T>(): Promise<T | null>; run(): Promise<{ meta: { changes?: number } }> }
 export interface Database { prepare(sql: string): Statement }
@@ -17,11 +17,11 @@ export async function posts(env: CmsEnv, admin = false): Promise<CmsPost[]> {
   return [...merged.values()].filter(p => admin || p.status === 'published')
 }
 export async function works(env: CmsEnv, admin = false): Promise<CmsWork[]> {
-  const merged = new Map(baseWorks().map(w => [w.id, w]))
+  let stored: CmsWork[] = []
   if (env.CMS_DB) {
     const { results } = await env.CMS_DB.prepare('SELECT payload FROM works').all<{ payload: string }>()
-    for (const row of results) { const w: CmsWork = JSON.parse(row.payload); merged.set(w.id, w) }
+    stored = results.map(row => JSON.parse(row.payload) as CmsWork)
   }
-  return [...merged.values()].filter(w => admin || w.status === 'published')
+  return mergeStoredWorks(stored, admin)
 }
 

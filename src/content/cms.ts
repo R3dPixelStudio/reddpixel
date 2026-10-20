@@ -2,12 +2,34 @@ import type { JournalPost } from './journal'
 import { SHOWCASES, type MediaItem, type ShowcaseCategory } from './portfolio.ts'
 
 export interface CmsPost extends JournalPost { status: 'draft' | 'published'; version: number; cover?: string; coverAlt?: string; publishedAt?: string }
-export interface CmsWork { id: string; branch: 'web' | 'vfx' | 'kinetic'; title: string; summary: string; url: string; cover: string; coverAlt: string; media: MediaItem[]; status: 'draft' | 'published'; version: number }
+export interface CmsWork { id: string; branch: 'web' | 'vfx' | 'kinetic'; visualCategory?: 'architecture' | 'creative'; title: string; summary: string; url: string; cover: string; coverAlt: string; media: MediaItem[]; status: 'draft' | 'published'; version: number }
 export interface CmsComment { id: string; slug: string; name: string; text: string; status: 'pending' | 'approved' | 'hidden'; reply: string; createdAt: string }
 export interface CmsMedia { key: string; src: string; type: 'image' | 'video'; name: string; bytes: number }
-export const baseWorks = (): CmsWork[] => SHOWCASES.flatMap(category => category.projects.map(project => ({ id: project.subId, branch: category.id as CmsWork['branch'], title: project.name, summary: project.desc, url: project.link ?? '', cover: project.cover, coverAlt: project.coverAlt, media: project.gallery, status: 'published', version: 0 })))
+const retiredWorkIds = new Set(['indiegame', 'logomotion', 'networking', 'electrical'])
+export const baseWorks = (): CmsWork[] => [
+  ...SHOWCASES.flatMap(category => category.projects.map(project => ({ id: project.subId, branch: category.id as CmsWork['branch'], ...(project.visualCategory ? { visualCategory: project.visualCategory } : {}), title: project.name, summary: project.desc, url: project.link ?? '', cover: project.cover, coverAlt: project.coverAlt, media: project.gallery, status: 'published' as const, version: 0 }))),
+  ...['Café Shariati', 'Technical project 02', 'Technical project 03'].map((title, i): CmsWork => ({ id: i === 0 ? 'cafe-shariati' : `technical-project-0${i + 1}`, branch: 'kinetic', title, summary: 'Project film in preparation. Add the project story, finished photos and installation footage before publishing.', url: '', cover: '', coverAlt: '', media: [], status: 'draft', version: 0 })),
+]
+
+export function mergeStoredWorks(stored: CmsWork[], admin = false): CmsWork[] {
+  const merged = new Map(baseWorks().map(work => [work.id, work]))
+  const legacyAlphaMedia = new Set(['/images/optimized/project1-1200.webp', '/images/optimized/atz-vfx-1200.webp'])
+  for (const saved of stored) {
+    if (retiredWorkIds.has(saved.id)) continue
+    let work = saved
+    const source = merged.get(work.id)
+    if (source && work.id === 'alphatradezone') {
+      // Upgrade only the old bundled photographs; preserve owner copy, links and uploaded media.
+      const oldCover = legacyAlphaMedia.has(work.cover)
+      const oldGallery = work.media.some(media => legacyAlphaMedia.has(media.src))
+      work = { ...work, ...(oldCover ? { cover: source.cover, coverAlt: source.coverAlt } : {}), ...(oldGallery ? { media: [...source.media, ...work.media.filter(media => !legacyAlphaMedia.has(media.src))] } : {}) }
+    }
+    merged.set(work.id, work)
+  }
+  return [...merged.values()].filter(work => !retiredWorkIds.has(work.id) && (admin || work.status === 'published'))
+}
 export function workCollections(items: CmsWork[]): ShowcaseCategory[] {
-  return SHOWCASES.map(category => ({ ...category, projects: items.filter(item => item.branch === category.id && item.status === 'published').map(item => ({ subId: item.id, name: item.title, desc: item.summary, cover: item.cover, coverAlt: item.coverAlt, gallery: item.media, hasLink: !!item.url, ...(item.url ? { link: item.url } : {}) })) }))
+  return SHOWCASES.map(category => ({ ...category, projects: items.filter(item => item.branch === category.id && item.status === 'published' && !retiredWorkIds.has(item.id)).map(item => ({ subId: item.id, name: item.title, desc: item.summary, cover: item.cover, coverAlt: item.coverAlt, gallery: item.media, ...(item.branch === 'vfx' ? { visualCategory: item.visualCategory ?? 'creative' } : {}), hasLink: !!item.url, ...(item.url ? { link: item.url } : {}) })) }))
 }
 const text = (value: unknown, min: number, max: number): value is string => typeof value === 'string' && value.trim().length >= min && value.length <= max && !Array.from(value).some(char => char.charCodeAt(0) < 32 && ![9, 10, 13].includes(char.charCodeAt(0)))
 export const safeMediaPath = (value: unknown): value is string => typeof value === 'string' && /^\/(?:images\/[a-zA-Z0-9_./-]+|media\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp|mp4|webm))$/.test(value) && !value.includes('..')
@@ -24,7 +46,8 @@ export function validPost(value: unknown): value is CmsPost {
 export function validWork(value: unknown): value is CmsWork {
   if (!value || typeof value !== 'object') return false
   const w = value as CmsWork
-  return text(w.id, 2, 100) && /^[a-zA-Z0-9_-]+$/.test(w.id) && ['web', 'vfx', 'kinetic'].includes(w.branch) && text(w.title, 2, 180) && text(w.summary, 10, 2000) && safeWebsite(w.url) && safeMediaPath(w.cover) && text(w.coverAlt, 3, 300) && ['draft', 'published'].includes(w.status) && Number.isInteger(w.version) && w.version >= 0 && Array.isArray(w.media) && w.media.length <= 50 && w.media.every(m => m && ['image', 'video'].includes(m.type) && safeMediaPath(m.src) && text(m.alt, 3, 300))
+  const coverValid = (safeMediaPath(w.cover) && text(w.coverAlt, 3, 300)) || (w.status === 'draft' && w.cover === '' && w.coverAlt === '')
+  return text(w.id, 2, 100) && /^[a-zA-Z0-9_-]+$/.test(w.id) && !retiredWorkIds.has(w.id) && ['web', 'vfx', 'kinetic'].includes(w.branch) && (w.visualCategory === undefined || (w.branch === 'vfx' && ['architecture', 'creative'].includes(w.visualCategory))) && text(w.title, 2, 180) && text(w.summary, 10, 2000) && safeWebsite(w.url) && coverValid && ['draft', 'published'].includes(w.status) && Number.isInteger(w.version) && w.version >= 0 && Array.isArray(w.media) && w.media.length <= 50 && (w.status === 'draft' || w.branch !== 'kinetic' || w.media.length > 0) && w.media.every(m => m && ['image', 'video'].includes(m.type) && safeMediaPath(m.src) && text(m.alt, 3, 300) && (!m.poster || (m.type === 'video' && safeMediaPath(m.poster))))
 }
 
 
