@@ -6,6 +6,8 @@ import { SHOWCASES, VISUAL_SECTIONS, type MediaItem } from '../../content/portfo
 import { workCollections, type CmsWork } from '../../content/cms'
 import Signature from '../art/Signature'
 import MediaCarousel from '../work/MediaCarousel'
+import ProjectShowcase from '../work/ProjectShowcase'
+import VisualShowcase from '../work/VisualShowcase'
 import LineIcon from '../art/LineIcon'
 
 import { GIRIH_PATH } from '../../content/ornament'
@@ -115,10 +117,11 @@ export default function WorksPhaseUI() {
         </button>)}
       </div>
     </div>
-    {category && <div className="collection-content">
+    {category && <div className={`collection-content${category.id === 'web' ? ' collection-websites' : category.id === 'vfx' ? ' collection-visuals' : ''}`}>
       <header className="collection-header"><div><p className="eyebrow">COLLECTION / {String(categories.findIndex(item => item.id === category.id) + 1).padStart(2, '0')}</p><h2 ref={collectionHeading} tabIndex={-1}>{category.title}</h2></div><p className="collection-return-hint">Either arrow below returns to collections.</p></header>
       <div className="collection-scroll" tabIndex={0} role="region" aria-label={`${category.title} projects`}>
-      <p className="collection-intro">{category.id === 'web' ? 'Selected websites. Explore the interfaces, then visit the live experience.' : category.id === 'vfx' ? 'Two sides of the visual practice. Architectural presentations, creative work and moving images.' : 'Project by project. Installation films, timelapses and the details behind the finished space.'}</p>
+      {category.id === 'web' ? <ProjectShowcase projects={projects} active={active} /> : <>
+      {category.id !== 'vfx' && <p className="collection-intro">Project by project. Installation films, timelapses and the details behind the finished space.</p>}
       {category.id === 'vfx' && <div className="visual-filters" role="tablist" aria-label="Visual disciplines" onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()
@@ -126,13 +129,13 @@ export default function WorksPhaseUI() {
         setVisualCategory(VISUAL_SECTIONS[next].id)
         event.currentTarget.querySelectorAll<HTMLButtonElement>('button')[next]?.focus()
       }}>{VISUAL_SECTIONS.map(section => <button key={section.id} id={`visual-tab-${section.id}`} type="button" role="tab" aria-selected={visualCategory === section.id} aria-controls={`visual-panel-${section.id}`} tabIndex={visualCategory === section.id ? 0 : -1} onClick={() => setVisualCategory(section.id)}>{section.title}<span>{section.description}</span></button>)}</div>}
-      <div key={`${category.id}-${visualCategory}`} className={`collection-projects${category.id === 'kinetic' ? ' technical-projects' : ''}`} {...(category.id === 'vfx' ? { role: 'tabpanel', id: `visual-panel-${visualCategory}`, 'aria-labelledby': `visual-tab-${visualCategory}` } : {})}>
-      <div className="website-collection">
+      <div key={`${category.id}-${visualCategory}`} className={`collection-projects${category.id === 'kinetic' ? ' technical-projects' : ' visual-gallery-panel'}`} {...(category.id === 'vfx' ? { role: 'tabpanel', id: `visual-panel-${visualCategory}`, 'aria-labelledby': `visual-tab-${visualCategory}` } : {})}>
+      {category.id === 'vfx' && projects.length > 0 ? <VisualShowcase projects={projects} active={active} /> : <div className="website-collection">
         {projects.map((project, index) => <article key={project.subId} className={`website-entry${category.id === 'kinetic' ? ' technical-entry' : ''}`}>
           <MediaCarousel label={`${project.name} gallery`} active={active} compact items={[...new Map((category.id === 'kinetic' && project.gallery.length ? project.gallery.map(media => media.type === 'video' ? { ...media, poster: media.poster || project.cover } : media) : [{ type: 'image', src: project.cover, alt: project.coverAlt }, ...project.gallery] as MediaItem[]).map(item => [item.src, item])).values()]} />
           <div className="project-copy">{category.id === 'kinetic' && <span className="eyebrow">PROJECT FILM / {String(index + 1).padStart(2, '0')}</span>}<h3>{project.name}</h3><p>{project.desc}</p>{project.link && <a className="action-link project-visit" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Visit ${project.name} ${category.id === 'web' ? 'website' : 'project'}. Opens in a new tab.`}><span>{category.id === 'web' ? 'Visit website' : 'Visit project'}</span><LineIcon name="arrow" /></a>}</div>
         </article>)}
-      </div>
+      </div>}
       {!projects.length && <div className="work-preparing">
         <div className="work-preparing-art" aria-hidden="true"><BranchArt category={category.id} /></div>
         <p className="eyebrow">{category.id === 'kinetic' ? 'THREE PROJECT STORIES / IN PREPARATION' : 'ART & MOTION / NEXT CHAPTER'}</p>
@@ -141,6 +144,7 @@ export default function WorksPhaseUI() {
         {category.id === 'kinetic' && <ol className="technical-story-outline"><li><span>01</span> The project</li><li><span>02</span> The installation</li><li><span>03</span> The finished details</li></ol>}
       </div>}
       </div>
+      </>}
       </div>
     </div>}
   </section>

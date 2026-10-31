@@ -28,6 +28,18 @@ export interface ShowcaseCategory {
   projects: Project[]
 }
 
+const websiteOrder = ['alphatradezone', 'abi-mobile', 'Architect', 'vfx-webfolio']
+export function sortWebsiteProjects(projects: Project[]): Project[] {
+  const rank = (id: string) => { const index = websiteOrder.indexOf(id); return index < 0 ? websiteOrder.length : index }
+  return [...projects].sort((a, b) => rank(a.subId) - rank(b.subId))
+}
+
+export function sortVisualProjects(projects: Project[]): Project[] {
+  const order = ['damavand-villa', 'jaryan', 'hormozan-hospital']
+  const rank = (id: string) => { const index = order.indexOf(id); return index < 0 ? order.length : index }
+  return [...projects].sort((a, b) => rank(a.subId) - rank(b.subId))
+}
+
 export const PROFILE = {
   brand: 'REDDPIXEL',
   name: 'REDDPIXEL',
@@ -94,6 +106,17 @@ export const SHOWCASES: ShowcaseCategory[] = [
         ], hasLink: true, link: 'https://alphatradezonedemo.netlify.app',
       },
       {
+        subId: 'abi-mobile', name: 'Abi Mobile',
+        desc: 'A premium Persian ecommerce experience for mobile phones and accessories, currently available as a demo. Built with Next.js, TypeScript, and Three.js, its light interface and signature blue accents connect an interactive 3D hero with product discovery, customer accounts, and an admin panel.',
+        cover: '/images/work/abi-mobile/01-1600.webp', coverAlt: 'Abi Mobile Persian storefront with a light blue 3D phone hero',
+        gallery: [
+          workImage('abi-mobile', 1, 'Abi Mobile — Persian storefront and interactive phone hero'),
+          workImage('abi-mobile', 2, 'Abi Mobile — featured phone and product discovery'),
+          workImage('abi-mobile', 3, 'Abi Mobile — customer rewards and shopping benefits'),
+          workImage('abi-mobile', 4, 'Abi Mobile — accessories collection and product cards'),
+        ], hasLink: true, link: 'https://abi-mobile-demo.reminiscent-comte.workers.dev/',
+      },
+      {
         subId: 'Architect', name: '3D Architect',
         desc: 'An immersive portfolio for an architecture practice. React, Three.js, GSAP and custom WebGL shaders combine architectural content with spatial exploration and scroll-driven animation.',
         cover: '/images/optimized/architect-1-1200.webp', coverAlt: '3D Architect portfolio showing a minimalist architectural scene',
@@ -120,6 +143,18 @@ export const SHOWCASES: ShowcaseCategory[] = [
   {
     id: 'vfx', title: 'Visuals', subtitle: 'Architectural presentations · Art & motion', colorHex: '#3b82f6', bgPattern: '',
     projects: [
+      {
+        subId: 'damavand-villa', name: 'Damavand Villa Entrance', visualCategory: 'architecture',
+        desc: 'A fast-turnaround entrance and garden visualisation for an already-built villa in Damavand. The brief focused on the entrance view, integrating pergola-covered parking, a ramp and landscape details under a tight deadline.',
+        cover: '/images/work/damavand-villa/01-1600.webp', coverAlt: 'Damavand villa entrance and garden visualisation with pergola-covered parking and landscaped access',
+        gallery: [
+          workImage('damavand-villa', 1, 'Damavand Villa — entrance, garden and pergola presentation'),
+          workImage('damavand-villa', 2, 'Damavand Villa — elevated view of the parking and ramp approach'),
+          workImage('damavand-villa', 3, 'Damavand Villa — entrance view with planting and pergola details'),
+          workImage('damavand-villa', 4, 'Damavand Villa — parking, steps and garden circulation'),
+          workImage('damavand-villa', 5, 'Damavand Villa — overview of the entrance landscape and parking arrangement'),
+        ], hasLink: false,
+      },
       {
         subId: 'jaryan', name: 'Jaryan', visualCategory: 'architecture',
         desc: 'An architectural presentation exploring a turquoise facade, a landscaped courtyard and interior spaces, from street views to retail and cafe scenes.',

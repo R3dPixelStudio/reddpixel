@@ -9,13 +9,21 @@ Originals in `E:\final photo resume` are preserved. The repository contains resp
 | Source folder | Website entry | Images |
 | --- | --- | --- |
 | `website-alphatradezone` | Websites → AlphaTradeZone | 3, in numbered order |
+| `Abi mobile` | Websites → Abi Mobile | 4, in numbered order; supplied description and URL |
 | `website-vfx artist Webfolio` | Websites → VFX Artist Webfolio | 4, in numbered order; URL from `url.txt` |
 | `visuals-architecture representation`, `1-*` | Visuals → Architectural Presentations → Jaryan | 6 |
 | `visuals-architecture representation`, `2-*` | Visuals → Architectural Presentations → Hormozan Hospital | 5 |
+| `visuals-architecture representation/damavand villa entrence` | Visuals → Architectural Presentations → Damavand Villa Entrance | 5; natural filename order (8, 11, 12, 13, 15) |
 
 3D Architect retains its existing images, description and URL. The Art & Motion subsection is ready for creative/freelance pieces and social films; no unrelated images are used to fill it.
 
+The website gallery opens one project at a time, with a project index, a large screenshot viewer, a thumbnail filmstrip and full-screen browsing. Project notes expand on demand; the secondary live-site link opens a new tab. The order is AlphaTradeZone, Abi Mobile, 3D Architect, then VFX Artist Webfolio. The same priority applies to CMS-backed collections.
+
+Visuals uses a larger image stage with a compact animated project strip, moving red selection marker, drawn frame and directional image reveal. It has no thumbnails on desktop or mobile. The outgoing view remains visible while the next cover decodes; interrupted selections and unmount cancel pending image work and clean up the transition. Reduced motion skips the wipe. Architectural Presentations includes Jaryan, Hormozan Hospital and Damavand Villa Entrance; Art & Motion keeps its own subsection. The Damavand brief describes an entrance/garden visualisation for an existing villa, with pergola parking, a ramp and landscaping under a tight deadline. It does not claim design of the existing building.
+
 The old generic visual/technical entries (`indiegame`, `logomotion`, `networking`, `electrical`) are retired from the collections. Their original files and stored database records are preserved. An existing AlphaTradeZone CMS entry retains its owner-edited copy, URL, visibility and version; only references to its two old bundled images are upgraded, preserving any uploaded media.
+
+Architectural Presentations opens with Damavand Villa Entrance, followed by Jaryan and Hormozan Hospital. This ordering also applies to CMS-backed content.
 
 ## Technical project films
 
