@@ -1,0 +1,110 @@
+.collection-websites .collection-scroll { padding:0; }
+.collection-visuals .collection-scroll { display:flex; flex-direction:column; padding:0; }
+.collection-visuals .visual-filters { flex-shrink:0; margin:0; padding:12px 22px; border-bottom:1px solid #432b29; gap:10px; }
+.collection-visuals .visual-filters button { min-height:44px; padding:10px 14px; font-size:12px; }
+.collection-visuals .visual-filters button span { display:none; }
+.visual-gallery-panel { flex:1; min-height:0; }
+.visual-gallery-panel>.website-showcase { min-height:500px; }
+.collection-visuals .work-preparing { margin:22px; }
+.website-showcase { display:grid; grid-template-columns:210px minmax(0,1fr); height:100%; min-height:560px; color:#eadad3; }
+.website-index { padding:30px 22px; border-right:1px solid #432b29; background:#100b0c; }
+.website-index-heading .eyebrow { font-size:9px; color:#b77d6a; }
+.website-index-heading>p:last-child { margin:18px 0 32px; font:300 clamp(22px,2.3vw,30px)/1.22 system-ui,sans-serif; letter-spacing:-.025em; }
+.website-project-list { display:grid; gap:4px; }
+.website-project-choice { display:grid; grid-template-columns:22px minmax(0,1fr) 7px; gap:8px; align-items:center; min-height:65px; padding:14px 8px; color:#9e8d88; text-align:left; background:none; border:0; border-bottom:1px solid #322320; font:13px/1.5 system-ui,sans-serif; transition:color .2s,background .2s; }
+.website-project-number { font:9px/1.5 monospace; color:#80645b; }
+.website-project-choice i { width:5px; height:5px; background:#55302b; transform:rotate(45deg); }
+.website-project-choice[aria-pressed=true] { color:#ffe4d8; background:#211213; }
+.website-project-choice[aria-pressed=true] i { background:#e34d48; box-shadow:0 0 10px #b92b2b; }
+.website-project-choice[aria-pressed=true] .website-project-number { color:#e48d74; }
+.website-project-choice:hover,.website-project-choice:focus-visible { color:#fff0e3; background:#1d1112; outline-offset:3px; }
+.website-index-note { margin:32px 0 0; font:10px/1.9 monospace; color:#997d72; }
+.website-screen-story { min-width:0; min-height:0; display:flex; flex-direction:column; padding:24px 30px; animation:website-story-in .3s ease-out; }
+.website-story-heading { display:flex; flex-shrink:0; align-items:center; justify-content:space-between; gap:12px; padding:0 0 18px; }
+.website-story-heading h3 { margin:0; font:300 clamp(24px,3vw,36px)/1.2 system-ui,sans-serif; letter-spacing:-.025em; }
+.website-view-label { font:8px/1.5 monospace; letter-spacing:.12em; color:#a68473; }
+.website-screen-window { display:flex; flex-direction:column; flex:1; min-height:0; border:1px solid #58372e; background:#0c090a; }
+.website-window-bar { display:flex; flex-shrink:0; align-items:center; justify-content:space-between; gap:12px; height:30px; padding:0 14px; border-bottom:1px solid #3d2924; color:#997364; font:8px/1.5 monospace; letter-spacing:.1em; }
+.website-window-bar>span:first-child { display:flex; gap:5px; }
+.website-window-bar i { height:4px; width:4px; border:1px solid #805b4a; border-radius:50%; }
+.website-window-bar .line-icon { width:12px; height:12px; }
+.website-showcase .work-carousel { display:flex; flex-direction:column; flex:1; min-height:0; }
+.website-showcase .carousel-track { flex:1; min-height:170px; gap:12px; padding:0; scroll-padding:0; }
+.website-showcase .carousel-slide { display:flex; flex-direction:column; flex-basis:100%; transform:none; opacity:1; }
+.website-showcase .carousel-slide figcaption { display:none; }
+.website-showcase .carousel-media { flex:1; width:100%; height:100%; min-height:0; aspect-ratio:auto; max-height:none; border:0; background:#080708; }
+.website-showcase .carousel-media::after { display:none; }
+.website-showcase .carousel-media img,.website-showcase .carousel-media video { object-fit:contain; }
+.website-showcase .carousel-expand-mark { width:34px; height:34px; right:10px; bottom:10px; background:#170d0e; border-color:#a97554; }
+.carousel-thumbnails { position:relative; display:flex; flex-shrink:0; gap:8px; overflow-x:auto; padding:12px 14px 0; scrollbar-width:none; overscroll-behavior-x:contain; }
+.carousel-thumbnails::-webkit-scrollbar { display:none; }
+.carousel-thumbnails button { flex:0 0 80px; position:relative; height:46px; border:1px solid #5a3c33; padding:0; background:#170f10; opacity:.45; transition:opacity .2s,border-color .2s; }
+.carousel-thumbnails button[aria-current=true],.carousel-thumbnails button:hover,.carousel-thumbnails button:focus-visible { opacity:1; border-color:#e89972; outline-offset:2px; }
+.carousel-thumbnails img { width:100%; height:100%; object-fit:cover; }
+.carousel-thumbnails .line-icon { width:22px; height:22px; margin:auto; color:#d7ad98; }
+.carousel-thumbnails span { position:absolute; bottom:0; left:0; padding:1px 4px; color:#eed6c9; background:#150c0d; font:8px/1.5 monospace; }
+.website-showcase .carousel-controls { flex-shrink:0; padding:10px 14px 0; gap:12px; }
+.website-showcase .carousel-progress { display:none; }
+.website-showcase .carousel-arrows { margin-left:auto; gap:5px; }
+.website-showcase .carousel-arrows button { width:44px; height:38px; background:#130c0d; border-color:#57362e; font-size:19px; }
+.website-showcase .carousel-instruction { flex-shrink:0; margin:0; padding:0 14px 12px; font:10px/1.6 system-ui,sans-serif; letter-spacing:0; color:#9f8479; }
+.website-story-footer { display:grid; flex-shrink:0; grid-template-columns:minmax(0,1fr) 162px; gap:24px; padding-top:20px; }
+.website-project-notes { grid-column:1/-1; grid-row:1; min-width:0; }
+.website-project-notes summary { display:flex; align-items:center; justify-content:space-between; gap:16px; width:calc(100% - 186px); min-height:78px; padding:10px 0; cursor:pointer; border-bottom:1px solid #4d302a; font:12px/1.5 system-ui,sans-serif; color:#ccb3a5; list-style:none; }
+.website-project-notes summary::-webkit-details-marker { display:none; }
+.website-project-notes summary span { color:#d48b6b; font-size:18px; transition:transform .2s; }
+.website-project-notes[open] summary span { transform:rotate(45deg); }
+.website-project-notes p { max-width:66ch; margin:14px 0 0; color:#bda69c; font:14px/1.8 system-ui,sans-serif; }
+.project-footer-notes { grid-template-columns:minmax(0,1fr); }
+.project-footer-notes .website-project-notes summary { width:100%; min-height:44px; }
+.website-live-stamp { grid-column:2; grid-row:1; align-self:start; display:grid; grid-template-columns:1fr 18px; gap:5px 14px; min-width:162px; padding:11px 13px 8px; border:1px solid #6b4335; color:#e4b697; text-decoration:none; background:#170e0e; transition:border-color .2s,background .2s; }
+.website-live-stamp small { display:block; margin-bottom:4px; font:7px/1.5 monospace; letter-spacing:.08em; color:#ae826a; }
+.website-live-stamp strong { font:12px/1.5 system-ui,sans-serif; font-weight:400; }
+.website-live-stamp>.line-icon { width:16px; height:16px; align-self:center; }
+.website-new-tab { grid-column:1/-1; padding-top:5px; border-top:1px dashed #5c3c30; font:7px/1.5 monospace; letter-spacing:.12em; color:#a27965; }
+.website-live-stamp:hover,.website-live-stamp:focus-visible { background:#291616; border-color:#dd9671; outline-offset:3px; }
+@keyframes website-story-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@media(max-width:1023px) {
+  .website-showcase { grid-template-columns:175px minmax(0,1fr); }
+  .website-index { padding:24px 14px; }
+  .website-screen-story { padding:24px 18px; }
+  .website-story-footer { gap:16px; grid-template-columns:minmax(0,1fr) 138px; }
+  .website-project-notes summary { width:calc(100% - 154px); }
+  .website-live-stamp { min-width:138px; }
+}
+@media(max-width:767px) {
+  .collection-visuals .visual-filters { padding:10px 14px; gap:8px; }
+  .collection-visuals .visual-filters button { font-size:11px; padding:9px; }
+  .collection-visuals .visual-gallery-panel { flex:none; }
+  .visual-gallery-panel>.website-showcase { min-height:0; }
+  .collection-visuals .work-preparing { margin:14px; }
+  .website-showcase { display:block; height:auto; min-height:100%; }
+  .website-index { padding:12px 14px; border-right:0; border-bottom:1px solid #432b29; }
+  .website-index-heading,.website-index-note { display:none; }
+  .website-project-list { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:12px; }
+  .website-project-choice { min-height:48px; padding:10px 6px; font-size:12px; grid-template-columns:17px minmax(0,1fr) 5px; gap:5px; }
+  .website-screen-story { display:block; padding:18px 14px; }
+  .website-screen-window,.website-showcase .work-carousel { display:block; }
+  .website-showcase .carousel-track { min-height:0; }
+  .website-showcase .carousel-slide { display:block; }
+  .website-story-heading { padding-bottom:12px; }
+  .website-story-heading h3 { font-size:26px; }
+  .website-view-label { font-size:7px; }
+  .website-window-bar { height:26px; padding-inline:10px; font-size:6px; }
+  .website-showcase .carousel-media { height:auto; min-height:170px; aspect-ratio:2/1; }
+  .visual-showcase .carousel-media { aspect-ratio:4/3; min-height:200px; }
+  .visual-showcase .website-project-choice:last-child:nth-child(odd) { grid-column:1/-1; }
+  .carousel-thumbnails { gap:6px; padding:10px 10px 0; }
+  .carousel-thumbnails button { flex-basis:61px; height:36px; }
+  .website-showcase .carousel-controls { padding:8px 10px 0; }
+  .website-showcase .carousel-arrows button { height:40px; }
+  .website-showcase .carousel-instruction { padding:0 10px 10px; font-size:10px; }
+  .website-story-footer { gap:14px; padding-top:14px; grid-template-columns:minmax(0,1fr) 127px; }
+  .website-project-notes summary { width:calc(100% - 141px); font-size:12px; }
+  .website-live-stamp { min-width:127px; padding:9px 10px 7px; gap:4px 8px; }
+  .website-live-stamp small { font-size:6px; }
+  .website-live-stamp strong { font-size:12px; }
+  .project-footer-notes { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:360px) { .website-screen-story { padding-inline:10px; }.website-index { padding-inline:10px; }.website-project-choice { font-size:11px; }.website-showcase .carousel-media { min-height:145px; }.website-story-heading h3 { font-size:24px; } }
+@media(prefers-reduced-motion:reduce) { .website-screen-story { animation:none; }.website-project-choice,.carousel-thumbnails button,.website-project-notes summary span,.website-live-stamp { transition:none; } }

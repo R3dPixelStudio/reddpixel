@@ -7,10 +7,11 @@ import { IMAGE_SIZES, thumbnail } from '../../content/imageSizes'
 import { useExperience } from '../../stores/useExperience'
 import LineIcon from '../art/LineIcon'
 
-type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean; expandable?: boolean; initialIndex?: number }
+type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean; expandable?: boolean; initialIndex?: number; filmstrip?: boolean; filmstripLabel?: 'screen' | 'image' }
 
-export default function MediaCarousel({ items, label, active, compact = false, expandable = true, initialIndex = 0 }: Props) {
+export default function MediaCarousel({ items, label, active, compact = false, expandable = true, initialIndex = 0, filmstrip = false, filmstripLabel = 'screen' }: Props) {
   const track = useRef<HTMLDivElement>(null)
+  const thumbnails = useRef<HTMLDivElement>(null)
   const frame = useRef<number | null>(null)
   const drag = useRef<{ id: number; x: number; left: number; start: number; moved: boolean } | null>(null)
   const suppressClick = useRef(false)
@@ -77,6 +78,11 @@ export default function MediaCarousel({ items, label, active, compact = false, e
     goTo(event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : currentIndex + (event.key === 'ArrowRight' ? 1 : -1))
   }
   useEffect(() => {
+    const strip = thumbnails.current
+    const selected = strip?.children[currentIndex] as HTMLElement | undefined
+    if (strip && selected) strip.scrollTo({ left: selected.offsetLeft - strip.clientWidth / 2 + selected.offsetWidth / 2, behavior: reducedMotion ? 'instant' : 'smooth' })
+  }, [currentIndex, filmstrip, reducedMotion])
+  useEffect(() => {
     const element = track.current
     if (!element) return
     element.querySelectorAll('video').forEach((video, i) => {
@@ -109,7 +115,7 @@ export default function MediaCarousel({ items, label, active, compact = false, e
     }
   }, [hasItems])
   if (!items.length) return <p className="gallery-empty">New work is being prepared for this collection.</p>
-  return <section className={`work-carousel${compact ? ' carousel-compact' : ''}`} aria-label={label} aria-roledescription="carousel">
+  return <section className={`work-carousel${compact ? ' carousel-compact' : ''}${filmstrip ? ' carousel-filmstrip' : ''}`} aria-label={label} aria-roledescription="carousel">
     <div ref={track} className="carousel-track" data-index={currentIndex} tabIndex={items.length > 1 ? 0 : -1} aria-label={`${label}: swipe, drag or use arrow keys`} onScroll={syncScroll} onKeyDown={keyboard} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={finishDrag} onPointerCancel={finishDrag} onLostPointerCapture={finishDrag}>
       {items.map((item, i) => <figure className="carousel-slide" key={item.src} data-slide={i} data-current={i === currentIndex} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${items.length}`}>
         <div className="carousel-media">{item.type === 'video'
@@ -118,12 +124,15 @@ export default function MediaCarousel({ items, label, active, compact = false, e
         <figcaption>{item.alt}</figcaption>
       </figure>)}
     </div>
+    {filmstrip && items.length > 1 && <div ref={thumbnails} className="carousel-thumbnails" aria-label={`${label} ${filmstripLabel} selector`}>{items.map((item, i) => <button key={item.src} type="button" aria-label={`Show ${filmstripLabel} ${i + 1} in ${label}`} aria-current={i === currentIndex ? 'true' : undefined} onClick={() => goTo(i)}>
+      {item.type === 'image' || item.poster ? <img src={item.type === 'image' ? thumbnail(item.src) : item.poster} alt="" loading="lazy" decoding="async" /> : <LineIcon name="youtube" />}<span>{String(i + 1).padStart(2, '0')}</span>
+    </button>)}</div>}
     <div className="carousel-controls">
       <p className="carousel-counter" aria-live="polite" aria-atomic="true"><span>{String(currentIndex + 1).padStart(2, '0')}</span> / {String(items.length).padStart(2, '0')}</p>
       <div className="carousel-progress" aria-hidden="true"><span style={{ width: `${100 / items.length}%`, transform: `translateX(${currentIndex * 100}%)` }} /></div>
       {items.length > 1 && <div className="carousel-arrows"><button type="button" aria-label={`Previous image in ${label}`} disabled={currentIndex === 0} onClick={() => goTo(currentIndex - 1)}>←</button><button type="button" aria-label={`Next image in ${label}`} disabled={currentIndex === items.length - 1} onClick={() => goTo(currentIndex + 1)}>→</button></div>}
     </div>
-    {items.length > 1 && <p className="carousel-instruction">Swipe or drag to explore</p>}
+    {items.length > 1 && <p className="carousel-instruction">{filmstrip ? `Swipe through ${filmstripLabel}s · Tap the image to enlarge` : 'Swipe or drag to explore'}</p>}
     {expanded && active && expandable && createPortal(<FullscreenGallery items={items} label={label} initialIndex={expanded.index} trigger={expanded.trigger} close={() => setExpanded(null)} />, document.body)}
   </section>
 }

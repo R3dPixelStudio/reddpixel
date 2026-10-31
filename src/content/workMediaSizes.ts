@@ -142,5 +142,77 @@ export const WORK_MEDIA_SIZES: Record<string, { width: number; height: number }>
   "/images/work/hormozan-hospital/05-1600.webp": {
     "width": 1024,
     "height": 1024
+  },
+  "/images/work/abi-mobile/01-640.webp": {
+    "width": 640,
+    "height": 303
+  },
+  "/images/work/abi-mobile/01-1600.webp": {
+    "width": 1600,
+    "height": 757
+  },
+  "/images/work/abi-mobile/02-640.webp": {
+    "width": 640,
+    "height": 304
+  },
+  "/images/work/abi-mobile/02-1600.webp": {
+    "width": 1600,
+    "height": 759
+  },
+  "/images/work/abi-mobile/03-640.webp": {
+    "width": 640,
+    "height": 302
+  },
+  "/images/work/abi-mobile/03-1600.webp": {
+    "width": 1600,
+    "height": 755
+  },
+  "/images/work/abi-mobile/04-640.webp": {
+    "width": 640,
+    "height": 303
+  },
+  "/images/work/abi-mobile/04-1600.webp": {
+    "width": 1600,
+    "height": 757
+  },
+  "/images/work/damavand-villa/01-640.webp": {
+    "width": 640,
+    "height": 360
+  },
+  "/images/work/damavand-villa/01-1600.webp": {
+    "width": 1600,
+    "height": 900
+  },
+  "/images/work/damavand-villa/02-640.webp": {
+    "width": 640,
+    "height": 360
+  },
+  "/images/work/damavand-villa/02-1600.webp": {
+    "width": 1600,
+    "height": 900
+  },
+  "/images/work/damavand-villa/03-640.webp": {
+    "width": 640,
+    "height": 360
+  },
+  "/images/work/damavand-villa/03-1600.webp": {
+    "width": 1600,
+    "height": 900
+  },
+  "/images/work/damavand-villa/04-640.webp": {
+    "width": 640,
+    "height": 360
+  },
+  "/images/work/damavand-villa/04-1600.webp": {
+    "width": 1600,
+    "height": 900
+  },
+  "/images/work/damavand-villa/05-640.webp": {
+    "width": 640,
+    "height": 360
+  },
+  "/images/work/damavand-villa/05-1600.webp": {
+    "width": 1600,
+    "height": 900
   }
 }

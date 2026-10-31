@@ -1,5 +1,5 @@
 import type { JournalPost } from './journal'
-import { SHOWCASES, type MediaItem, type ShowcaseCategory } from './portfolio.ts'
+import { SHOWCASES, sortWebsiteProjects, sortVisualProjects, type MediaItem, type Project, type ShowcaseCategory } from './portfolio.ts'
 
 export interface CmsPost extends JournalPost { status: 'draft' | 'published'; version: number; cover?: string; coverAlt?: string; publishedAt?: string }
 export interface CmsWork { id: string; branch: 'web' | 'vfx' | 'kinetic'; visualCategory?: 'architecture' | 'creative'; title: string; summary: string; url: string; cover: string; coverAlt: string; media: MediaItem[]; status: 'draft' | 'published'; version: number }
@@ -29,7 +29,10 @@ export function mergeStoredWorks(stored: CmsWork[], admin = false): CmsWork[] {
   return [...merged.values()].filter(work => !retiredWorkIds.has(work.id) && (admin || work.status === 'published'))
 }
 export function workCollections(items: CmsWork[]): ShowcaseCategory[] {
-  return SHOWCASES.map(category => ({ ...category, projects: items.filter(item => item.branch === category.id && item.status === 'published' && !retiredWorkIds.has(item.id)).map(item => ({ subId: item.id, name: item.title, desc: item.summary, cover: item.cover, coverAlt: item.coverAlt, gallery: item.media, ...(item.branch === 'vfx' ? { visualCategory: item.visualCategory ?? 'creative' } : {}), hasLink: !!item.url, ...(item.url ? { link: item.url } : {}) })) }))
+  return SHOWCASES.map(category => {
+    const projects: Project[] = items.filter(item => item.branch === category.id && item.status === 'published' && !retiredWorkIds.has(item.id)).map(item => ({ subId: item.id, name: item.title, desc: item.summary, cover: item.cover, coverAlt: item.coverAlt, gallery: item.media, ...(item.branch === 'vfx' ? { visualCategory: item.visualCategory ?? 'creative' } : {}), hasLink: !!item.url, ...(item.url ? { link: item.url } : {}) }))
+    return { ...category, projects: category.id === 'web' ? sortWebsiteProjects(projects) : category.id === 'vfx' ? sortVisualProjects(projects) : projects }
+  })
 }
 const text = (value: unknown, min: number, max: number): value is string => typeof value === 'string' && value.trim().length >= min && value.length <= max && !Array.from(value).some(char => char.charCodeAt(0) < 32 && ![9, 10, 13].includes(char.charCodeAt(0)))
 export const safeMediaPath = (value: unknown): value is string => typeof value === 'string' && /^\/(?:images\/[a-zA-Z0-9_./-]+|media\/[a-zA-Z0-9_-]+\.(?:jpg|png|webp|mp4|webm))$/.test(value) && !value.includes('..')
