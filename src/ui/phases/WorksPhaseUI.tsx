@@ -9,6 +9,7 @@ import MediaCarousel from '../work/MediaCarousel'
 import ProjectShowcase from '../work/ProjectShowcase'
 import VisualShowcase from '../work/VisualShowcase'
 import LineIcon from '../art/LineIcon'
+import { allowGalleryWarmup, prepareGalleryPreview } from '../work/galleryImages'
 
 import { GIRIH_PATH } from '../../content/ornament'
 
@@ -33,6 +34,18 @@ export default function WorksPhaseUI() {
   const [categories, setCategories] = useState(SHOWCASES)
   const category = categories.find((item) => item.id === selected)
   const projects = category?.projects.filter(project => category.id !== 'vfx' || (project.visualCategory ?? 'creative') === visualCategory) ?? []
+  useEffect(() => {
+    if ((phase !== 1 && phase !== 2) || !allowGalleryWarmup()) return
+    let cancelled = false
+    const covers = selected ? categories.find(item => item.id === selected)?.projects.map(project => project.cover) ?? [] : categories.flatMap(item => item.projects[0] ? [item.projects[0].cover] : [])
+    void (async () => {
+      for (const cover of covers) {
+        if (cancelled || !allowGalleryWarmup()) break
+        await prepareGalleryPreview(cover).catch(() => {})
+      }
+    })()
+    return () => { cancelled = true }
+  }, [phase, selected, categories])
   useEffect(() => {
     const controller = new AbortController()
     fetch('/api/cms/work', { signal: controller.signal }).then(response => {
@@ -109,7 +122,7 @@ export default function WorksPhaseUI() {
     <div className="collection-index" aria-hidden={!!selected} inert={!!selected}>
       <header className="works-heading"><Signature /><div><p className="eyebrow">SELECTED WORK / 02</p><h2>Enter a collection.</h2></div><span className="work-heading-line" aria-hidden="true" /></header>
       <div className="collection-branches">
-        {categories.map((item, index) => <button key={item.id} type="button" data-collection={item.id} className={`collection-branch branch-${item.id}`} style={{ '--branch-color': item.colorHex } as CSSProperties} aria-label={`Explore ${item.title}`} onClick={() => { useExperience.getState().setWorkCollection(true, true); setVisualCategory('architecture'); setSelected(item.id) }}>
+        {categories.map((item, index) => <button key={item.id} type="button" data-collection={item.id} className={`collection-branch branch-${item.id}`} style={{ '--branch-color': item.colorHex } as CSSProperties} aria-label={`Explore ${item.title}`} onPointerEnter={() => { if (item.projects[0]) void prepareGalleryPreview(item.projects[0].cover, 'high').catch(() => {}) }} onFocus={() => { if (item.projects[0]) void prepareGalleryPreview(item.projects[0].cover, 'high').catch(() => {}) }} onClick={() => { useExperience.getState().setWorkCollection(true, true); setVisualCategory('architecture'); setSelected(item.id) }}>
           <span className="branch-number" aria-hidden="true">0{index + 1} /</span>
           <span className="branch-art" aria-hidden="true"><BranchArt category={item.id} /></span>
           <span className="branch-copy"><strong>{item.title}</strong><span>{item.subtitle}</span></span>

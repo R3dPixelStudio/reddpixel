@@ -3,13 +3,15 @@ import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import type { MediaItem } from '../../content/portfolio'
-import { IMAGE_SIZES, thumbnail } from '../../content/imageSizes'
+import { thumbnail } from '../../content/imageSizes'
 import { useExperience } from '../../stores/useExperience'
 import LineIcon from '../art/LineIcon'
+import GalleryImage from './GalleryImage'
+import { allowGalleryWarmup, prepareGalleryPreview, VISUAL_IMAGE_SIZES } from './galleryImages'
 
-type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean; expandable?: boolean; initialIndex?: number; filmstrip?: boolean; filmstripLabel?: 'screen' | 'image' }
+type Props = { items: MediaItem[]; label: string; active: boolean; compact?: boolean; expandable?: boolean; initialIndex?: number; filmstrip?: boolean; filmstripLabel?: 'screen' | 'image'; imageSizes?: string }
 
-export default function MediaCarousel({ items, label, active, compact = false, expandable = true, initialIndex = 0, filmstrip = false, filmstripLabel = 'screen' }: Props) {
+export default function MediaCarousel({ items, label, active, compact = false, expandable = true, initialIndex = 0, filmstrip = false, filmstripLabel = 'screen', imageSizes = VISUAL_IMAGE_SIZES }: Props) {
   const track = useRef<HTMLDivElement>(null)
   const thumbnails = useRef<HTMLDivElement>(null)
   const frame = useRef<number | null>(null)
@@ -20,6 +22,12 @@ export default function MediaCarousel({ items, label, active, compact = false, e
   const hasItems = items.length > 0
   const currentIndex = Math.min(index, Math.max(0, items.length - 1))
   const reducedMotion = useExperience(state => state.reducedMotion)
+  useEffect(() => {
+    if (!active || !allowGalleryWarmup()) return
+    for (const item of items.slice(Math.max(0, currentIndex - 1), currentIndex + 2)) {
+      if (item.type === 'image') void prepareGalleryPreview(item.src).catch(() => {})
+    }
+  }, [active, currentIndex, items])
   const nearest = () => {
     const element = track.current
     if (!element) return 0
@@ -120,7 +128,7 @@ export default function MediaCarousel({ items, label, active, compact = false, e
       {items.map((item, i) => <figure className="carousel-slide" key={item.src} data-slide={i} data-current={i === currentIndex} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${items.length}`}>
         <div className="carousel-media">{item.type === 'video'
           ? <video src={item.src} poster={item.poster} controls playsInline preload="none" aria-label={item.alt} tabIndex={active && currentIndex === i ? 0 : -1} />
-          : <>{expandable && <button type="button" className="carousel-open" tabIndex={active && currentIndex === i ? 0 : -1} aria-label={`Expand image ${i + 1} in ${label}`} onClick={event => { if (event.detail > 0 && suppressClick.current) return; if (active) setExpanded({ index: i, trigger: event.currentTarget }) }}><span className="carousel-expand-mark"><LineIcon name="expand" /></span></button>}<img src={item.src} srcSet={thumbnail(item.src) !== item.src ? `${thumbnail(item.src)} ${IMAGE_SIZES[thumbnail(item.src)]?.width ?? 640}w, ${item.src} ${IMAGE_SIZES[item.src]?.width ?? 1200}w` : undefined} sizes={compact ? '(min-width:768px) 45vw, 90vw' : '100vw'} width={IMAGE_SIZES[item.src]?.width} height={IMAGE_SIZES[item.src]?.height} loading={i === currentIndex ? 'eager' : 'lazy'} decoding="async" draggable={false} alt={item.alt} /></>}</div>
+          : <>{expandable && <button type="button" className="carousel-open" tabIndex={active && currentIndex === i ? 0 : -1} aria-label={`Expand image ${i + 1} in ${label}`} onClick={event => { if (event.detail > 0 && suppressClick.current) return; if (active) setExpanded({ index: i, trigger: event.currentTarget }) }}><span className="carousel-expand-mark"><LineIcon name="expand" /></span></button>}<GalleryImage src={item.src} alt={item.alt} sizes={imageSizes} enabled={active && (i === currentIndex || (Math.abs(i - currentIndex) <= 1 && allowGalleryWarmup()))} current={i === currentIndex} /></>}</div>
         <figcaption>{item.alt}</figcaption>
       </figure>)}
     </div>
@@ -164,6 +172,6 @@ function FullscreenGallery({ items, label, initialIndex, trigger, close }: { ite
   }
   return <dialog ref={dialog} className="fullscreen-gallery" aria-label={`${label} full screen`} onCancel={event => { event.preventDefault(); dismiss() }} onKeyDown={event => { if (event.key === 'Escape') event.stopPropagation() }}>
     <header className="fullscreen-gallery-header"><div><p className="eyebrow">REDDPIXEL / GALLERY</p><h2>{label}</h2></div><button type="button" aria-label="Close full-screen gallery" onClick={dismiss}><LineIcon name="close" /></button></header>
-    <div className="fullscreen-gallery-body"><MediaCarousel items={items} label={label} active expandable={false} initialIndex={initialIndex} /></div>
+    <div className="fullscreen-gallery-body"><MediaCarousel items={items} label={label} active expandable={false} initialIndex={initialIndex} imageSizes="100vw" /></div>
   </dialog>
 }

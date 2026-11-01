@@ -267,6 +267,10 @@ button:disabled { cursor:default; opacity:.4; }
 .collection-content>.work-carousel .carousel-controls,.collection-content>.work-carousel .carousel-instruction{flex-shrink:0}
 @media(max-height:660px){.collection-content>.work-carousel{min-height:230px}}
 .carousel-media img,.carousel-media video,.website-entry .carousel-media img{position:absolute;inset:0;display:block}
+.gallery-image-placeholder{position:absolute;inset:0;display:grid;place-items:center;background:#100b0c;pointer-events:none}.gallery-image-placeholder>span{width:36px;height:36px;border:1px solid #68412f;transform:rotate(45deg)}
+.carousel-media .gallery-image-preview{z-index:0}.carousel-media .gallery-image-full{z-index:1;transition:opacity .18s ease-out}.carousel-media .gallery-image-full[data-ready=false]{opacity:0}
+.gallery-image-error{position:absolute;z-index:3;left:12px;right:12px;bottom:64px;display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;background:#1b1012;color:#e5c9b8;font:11px/1.5 system-ui,sans-serif}.gallery-image-error button{min-height:40px;padding:6px 12px;border:1px solid #ad7053;background:#2b1719;color:#ffe0cb}
+@media(prefers-reduced-motion:reduce){.carousel-media .gallery-image-full{transition:none}}
 @media(min-width:1000px){
  .collection-content:has(>.work-carousel){display:grid;grid-template-columns:minmax(170px,.27fr) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:28px}
  .collection-content:has(>.work-carousel)>.collection-header{grid-column:1;grid-row:1;display:block;position:static;padding:8px 0 20px;align-self:start}
