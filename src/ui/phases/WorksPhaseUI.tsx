@@ -135,6 +135,10 @@ export default function WorksPhaseUI() {
           <MediaCarousel label={`${project.name} gallery`} active={active} compact items={[...new Map((category.id === 'kinetic' && project.gallery.length ? project.gallery.map(media => media.type === 'video' ? { ...media, poster: media.poster || project.cover } : media) : [{ type: 'image', src: project.cover, alt: project.coverAlt }, ...project.gallery] as MediaItem[]).map(item => [item.src, item])).values()]} />
           <div className="project-copy">{category.id === 'kinetic' && <span className="eyebrow">PROJECT FILM / {String(index + 1).padStart(2, '0')}</span>}<h3>{project.name}</h3><p>{project.desc}</p>{project.link && <a className="action-link project-visit" href={project.link} target="_blank" rel="noopener noreferrer" aria-label={`Visit ${project.name} ${category.id === 'web' ? 'website' : 'project'}. Opens in a new tab.`}><span>{category.id === 'web' ? 'Visit website' : 'Visit project'}</span><LineIcon name="arrow" /></a>}</div>
         </article>)}
+        {category.id === 'kinetic' && projects.length > 0 && <article className="technical-coming-soon" aria-labelledby="technical-coming-soon-title">
+          <div className="technical-coming-soon-art" aria-hidden="true"><BranchArt category="kinetic" /></div>
+          <div><p className="eyebrow">NEXT PROJECT / IN PREPARATION</p><h3 id="technical-coming-soon-title">Coming soon</h3><p>Another on-site project is taking shape. Its story and film will appear here.</p></div>
+        </article>}
       </div>}
       {!projects.length && <div className="work-preparing">
         <div className="work-preparing-art" aria-hidden="true"><BranchArt category={category.id} /></div>

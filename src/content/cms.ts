@@ -8,7 +8,7 @@ export interface CmsMedia { key: string; src: string; type: 'image' | 'video'; n
 const retiredWorkIds = new Set(['indiegame', 'logomotion', 'networking', 'electrical'])
 export const baseWorks = (): CmsWork[] => [
   ...SHOWCASES.flatMap(category => category.projects.map(project => ({ id: project.subId, branch: category.id as CmsWork['branch'], ...(project.visualCategory ? { visualCategory: project.visualCategory } : {}), title: project.name, summary: project.desc, url: project.link ?? '', cover: project.cover, coverAlt: project.coverAlt, media: project.gallery, status: 'published' as const, version: 0 }))),
-  ...['Café Shariati', 'Technical project 02', 'Technical project 03'].map((title, i): CmsWork => ({ id: i === 0 ? 'cafe-shariati' : `technical-project-0${i + 1}`, branch: 'kinetic', title, summary: 'Project film in preparation. Add the project story, finished photos and installation footage before publishing.', url: '', cover: '', coverAlt: '', media: [], status: 'draft', version: 0 })),
+  ...['Technical project 02', 'Technical project 03'].map((title, i): CmsWork => ({ id: `technical-project-0${i + 2}`, branch: 'kinetic', title, summary: 'Project film in preparation. Add the project story, finished photos and installation footage before publishing.', url: '', cover: '', coverAlt: '', media: [], status: 'draft', version: 0 })),
 ]
 
 export function mergeStoredWorks(stored: CmsWork[], admin = false): CmsWork[] {

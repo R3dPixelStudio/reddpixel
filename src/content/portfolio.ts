@@ -184,7 +184,15 @@ export const SHOWCASES: ShowcaseCategory[] = [
   },
   {
     id: 'kinetic', title: 'Technical work', subtitle: 'Project films & on-site installation stories', colorHex: '#f59e0b', bgPattern: '',
-    projects: [],
+    projects: [
+      {
+        subId: 'cafe-shariati', name: 'Café Shariati',
+        desc: 'On-site technical work at a café on Shariati Street. This project film follows the space from installation in progress to the finished café.',
+        cover: '/images/work/cafe-shariati/cover-1280.webp', coverAlt: 'Finished café on Shariati Street with a leafy ceiling, warm lighting and seating',
+        gallery: [{ type: 'video', src: '/media/3048abfa-5d10-4cc6-b61d-c3fd0e361f45.mp4', alt: 'Café Shariati — on-site installation and finished café project film', poster: '/images/work/cafe-shariati/cover-1280.webp' }],
+        hasLink: false,
+      },
+    ],
   },
 ]
 

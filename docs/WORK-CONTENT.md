@@ -27,13 +27,18 @@ Architectural Presentations opens with Damavand Villa Entrance, followed by Jary
 
 ## Technical project films
 
-The studio starts with three private drafts:
+The first project is Café Shariati, a café on Shariati Street. Its full project film is uploaded through the Content Studio to the existing production D1 media library at `/media/3048abfa-5d10-4cc6-b61d-c3fd0e361f45.mp4`. The poster, taken from the finished café at 55 seconds, is also in D1 at `/media/8576b506-6265-499d-8acd-64cfedc1153b.webp`. Responsive repository poster copies remain as a source fallback. The source entry is published; an existing owner-saved CMS entry still takes precedence, including its draft/published status.
 
-- `cafe-shariati` — Café Shariati.
+The original `E:\elec\premiere project\Sequence 01.mp4` is preserved outside the repository. The web copy keeps the entire 60.37-second sequence, 1920×1080 resolution and 30 fps, with no cuts or speed changes. Lossy H.264 compression reduces it from 152,450,569 bytes to 9,562,274 bytes (about 9.6 MB); this preserves duration and resolution, not identical image quality. The original has no audio track. Fast-start metadata supports playback before the full file downloads. Public gallery players show a poster, use `preload="none"`, have native controls and do not autoplay; playback pauses when leaving the collection or hiding the tab. The film and D1 poster consume 9,656,972 bytes of the studio's 300 MiB media budget. No R2 account or YouTube player is used, and the video binary is not committed to GitHub.
+
+A separate, non-interactive **Coming soon** card follows the published technical projects. It is an upcoming-project placeholder, with no invented project title, media or playback button. The mobile film layout uses the full card width.
+
+Two private drafts remain:
+
 - `technical-project-02` — rename when the second project is ready.
 - `technical-project-03` — rename when the third project is ready.
 
-The public collection introduces the films in preparation; it does not display unfinished drafts or present old installation photographs as evidence for these projects.
+The public collection does not display unfinished drafts or present old installation photographs as evidence for these projects.
 
 To publish a project:
 
@@ -50,4 +55,4 @@ Images and videos use the existing D1 upload library and its size limits; no new
 
 Use New work in the studio, choose a collection, add a cover/gallery and publish. Visuals also have a discipline selector: Architectural Presentations or Art & Motion. Untagged older custom visual entries default to Art & Motion.
 
-Source-based entries live in `src/content/portfolio.ts`; planned technical drafts are defined in `src/content/cms.ts`. Studio edits override matching source entries by ID. Keep published IDs stable when replacing media.
+Source-based entries live in `src/content/portfolio.ts`; planned technical drafts are defined in `src/content/cms.ts`. Studio edits override matching source entries by ID. Keep published IDs stable when replacing media. Upload new project films through the studio; D1 media uses `/media/` paths. A source checkout with a separate local D1 database does not contain the production upload; use the deployed site to review that film.
