@@ -1,8 +1,8 @@
 /images/work/*
-  Cache-Control: public, max-age=300, must-revalidate
+  Cache-Control: public, max-age=14400, must-revalidate
 
 /images/optimized/*
-  Cache-Control: public, max-age=300, must-revalidate
+  Cache-Control: public, max-age=14400, must-revalidate
 
 /admin/*
   X-Robots-Tag: noindex, nofollow

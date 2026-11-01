@@ -33,7 +33,7 @@ Architectural Presentations opens with Damavand Villa Entrance, followed by Jary
 
 Visual project transitions decode only the small preview, retain the outgoing view and allow original-image loading if the preview fails. They no longer gate project selection on a large desktop cover and then request a second responsive file. Videos remain outside this warming path and use click-to-play.
 
-Bundled work/optimized image responses use a five-minute browser cache followed by revalidation. These mutable filenames are deliberately not marked immutable. Rename a bundled image when an immediate cache-independent replacement is needed. UUID D1 media keeps its existing immutable caching policy. The journal article describes this policy and separates readable HTML from cinematic scene readiness.
+Bundled work/optimized image responses use a four-hour browser cache followed by revalidation. This matches the verified production custom-domain response: its Cloudflare Browser Cache TTL raised the earlier five-minute Pages header to four hours. These mutable filenames are deliberately not marked immutable. Rename a bundled image when an immediate cache-independent replacement is needed. UUID D1 media keeps its existing immutable caching policy. The journal article describes this policy and separates readable HTML from cinematic scene readiness.
 
 Targeted local checks cover delayed full-resolution files, rapid switching, failed-image retry, native caching during repeated resize, fullscreen, Data Saver, desktop and emulated mobile at device pixel ratio 3. Physical devices and Safari require their own review; these checks are not a universal device-performance claim.
 
