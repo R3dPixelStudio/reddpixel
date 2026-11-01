@@ -25,6 +25,18 @@ The old generic visual/technical entries (`indiegame`, `logomotion`, `networking
 
 Architectural Presentations opens with Damavand Villa Entrance, followed by Jaryan and Hormozan Hospital. This ordering also applies to CMS-backed content.
 
+## Gallery loading
+
+`galleryImages.ts` deduplicates small-preview requests and bounds completed cache entries to 12. About and Work warm the first known project covers; an opened collection warms its remaining covers sequentially. Hover/focus signals raise preview priority. Hidden tabs, Data Saver and reported 2G connections skip speculative work. Pending queues stop on view changes; shared requests already in progress can finish for their other consumers.
+
+`GalleryImage.tsx` paints a small preview underneath the decoded responsive image. Layout-specific `sizes` and the actual variant widths replace the old generic `100vw` hint. Only current/adjacent full-image sources start; loaded slides retain their elements. Resizing does not reset selection or hide an already displayed image. Enlarging the viewport, changing pixel density or entering fullscreen may legitimately fetch a sharper candidate once. Uploaded files without known derivatives use their real URL directly; no nonexistent thumbnail URL is invented. Failed loads offer Retry.
+
+Visual project transitions decode only the small preview, retain the outgoing view and allow original-image loading if the preview fails. They no longer gate project selection on a large desktop cover and then request a second responsive file. Videos remain outside this warming path and use click-to-play.
+
+Bundled work/optimized image responses use a five-minute browser cache followed by revalidation. These mutable filenames are deliberately not marked immutable. Rename a bundled image when an immediate cache-independent replacement is needed. UUID D1 media keeps its existing immutable caching policy. The journal article describes this policy and separates readable HTML from cinematic scene readiness.
+
+Targeted local checks cover delayed full-resolution files, rapid switching, failed-image retry, native caching during repeated resize, fullscreen, Data Saver, desktop and emulated mobile at device pixel ratio 3. Physical devices and Safari require their own review; these checks are not a universal device-performance claim.
+
 ## Technical project films
 
 The first project is Café Shariati, a café on Shariati Street. Its full project film is uploaded through the Content Studio to the existing production D1 media library at `/media/3048abfa-5d10-4cc6-b61d-c3fd0e361f45.mp4`. The poster, taken from the finished café at 55 seconds, is also in D1 at `/media/8576b506-6265-499d-8acd-64cfedc1153b.webp`. Responsive repository poster copies remain as a source fallback. The source entry is published; an existing owner-saved CMS entry still takes precedence, including its draft/published status.
