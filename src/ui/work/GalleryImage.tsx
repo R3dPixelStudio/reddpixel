@@ -12,7 +12,12 @@ export default function GalleryImage({ src, alt, sizes, enabled, current }: { sr
     try {
       if (typeof element.decode === 'function') await element.decode()
       if (element.isConnected && element.currentSrc === source && element.naturalWidth > 0) { setReady(true); setFailed(false) }
-    } catch { /* A resize can replace the candidate during decode; its next load handles reveal. */ }
+    } catch {
+      // Some engines reject decode() for an otherwise loaded image. Keep the load-event fallback.
+      if (!element.isConnected || element.currentSrc !== source) return
+      if (element.complete && element.naturalWidth > 0) { setReady(true); setFailed(false) }
+      else setFailed(true)
+    }
   }
   return <>
     {!ready && <span className="gallery-image-placeholder" aria-hidden="true"><span /></span>}
